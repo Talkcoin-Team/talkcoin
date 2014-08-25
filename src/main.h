@@ -72,6 +72,9 @@ static const int fHaveUPnP = false;
 inline int64 rndVal(int64 nValue) { return (nValue/CENT)*CENT; }
 inline int64 pVal(int64 nValue, int64 p) { return nValue * (((double)p/COIN)/100.0); }
 
+// Hard fork one
+static const int HF1 = 241920;
+
 // Temp fork dates to be decided later
 static const int nHardFork = 541110;  // Approx: Thu, 25 Sep 2014 17:00:00 GMT
 static const int nTestnetFork   =  600;
@@ -210,7 +213,8 @@ CBlockIndex * InsertBlockIndex(uint256 hash);
 bool VerifySignature(const CCoins& txFrom, const CTransaction& txTo, unsigned int nIn, unsigned int flags, int nHashType);
 /** Abort with a message */
 bool AbortNode(const std::string &msg);
-
+/** Return current block height **/
+int GetBlockHeight();
 
 
 

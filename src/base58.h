@@ -23,20 +23,95 @@
 #include "key.h"
 #include "script.h"
 #include "allocators.h"
+#include "main.h"
 
 static const char* pszBase58 = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
 
+std::string GET_A_GENESIS() {
+    int height = GetBlockHeight();
+    if (fTestNet) {
+        if (height < nTestnetFork) {
+            return "dG9haDhyNHZzWWtKWldiUUVhckx0U3VLNjFlakR0dXZ2bQ==";
+        } else {
+            return "";
+        }
+    } else {
+        if (height < nHardFork) {
+            return "VHBtZnVHcmp2Z240M0dvUjhNUlYzVUtmUEVaQnJzQlZHTg==";
+        } else {
+            return "";
+        }
+    }
+}
 
+std::string GET_A_VOTE1(int nHeight=HF1) {
+    int height = GetBlockHeight();
+    if (fTestNet) {
+        if (height < nTestnetFork) {
+            return "dG9haDhyNHZzWWtKWldiUUVhckx0U3VLNjFlakR0dXZ2bQ==";
+        } else {
+            return "";
+        }
+    } else {
+        if (height < nHardFork) {
+            return (nHeight<HF1)? "VHRENDZ6WmgxVEtqM0JaZHhLa0tzcmMyUHE3TDlqTUFxdw==" : GET_A_GENESIS();
+        } else {
+            return "";
+        }
+    }
+}
 
-// Hard fork on block ...
-static const int HF1 = 241920;
-//
-inline std::string GET_A_GENESIS()              { return "VHBtZnVHcmp2Z240M0dvUjhNUlYzVUtmUEVaQnJzQlZHTg=="; }
-inline std::string GET_A_VOTE1(int nHeight=HF1) { return (nHeight<HF1)? "VHRENDZ6WmgxVEtqM0JaZHhLa0tzcmMyUHE3TDlqTUFxdw==" : GET_A_GENESIS(); }
-inline std::string GET_A_VOTE2(int nHeight=HF1) { return (nHeight<HF1)? "VFpaR1I4NTk3QWV6VG1hVXNLMW1QS0dqYzRWbkZIaUJDcg==" : GET_A_GENESIS(); }
-inline std::string GET_A_CHAT(int nHeight=HF1)  { return (nHeight<HF1)? "VGJVMVgzcVRjUWZHbW52eDFkSHIxMjUxejlKaXZpQkdDNg==" : GET_A_GENESIS(); }
-inline std::string GET_A_SHARE()                { return "VGdEN0VScmdnQlBleng2SlBQMmJwV2pBRlFXMXJhZnpDbg=="; }
-//
+std::string GET_A_VOTE2(int nHeight=HF1) {
+    int height = GetBlockHeight();
+    if (fTestNet) {
+        if (height < nTestnetFork) {
+            return "dG9haDhyNHZzWWtKWldiUUVhckx0U3VLNjFlakR0dXZ2bQ==";
+        } else {
+            return "";
+        }
+    } else {
+        if (height < nHardFork) {
+            return (nHeight<HF1)? "VFpaR1I4NTk3QWV6VG1hVXNLMW1QS0dqYzRWbkZIaUJDcg==" : GET_A_GENESIS();
+        } else {
+            return "";
+        }
+    }
+}
+
+std::string GET_A_CHAT(int nHeight=HF1)  {
+    int height = GetBlockHeight();
+    if (fTestNet) {
+        if (height < nTestnetFork) {
+            return "dG9haDhyNHZzWWtKWldiUUVhckx0U3VLNjFlakR0dXZ2bQ==";
+        } else {
+            return "dGc3WE1FVHlaaUZQYkpRZngxYkdkVlJ6S3JacGtMdlFRdQ==";
+        }
+    } else {
+        if (height < nHardFork) {
+            return (nHeight<HF1)? "VFpaR1I4NTk3QWV6VG1hVXNLMW1QS0dqYzRWbkZIaUJDcg==" : GET_A_GENESIS();
+        } else {
+            return "VHdkellCTnhDSHpXd1NpdURiN1RnTWpReE1MYkdlVnN3TQ==";
+        }
+    }
+}
+
+std::string GET_A_SHARE()                {
+    int height = GetBlockHeight();
+    if (fTestNet) {
+        if (height < nTestnetFork) {
+            return "dG9haDhyNHZzWWtKWldiUUVhckx0U3VLNjFlakR0dXZ2bQ==";
+        } else {
+            return "dGc3WE1FVHlaaUZQYkpRZngxYkdkVlJ6S3JacGtMdlFRdQ==";
+        }
+    } else {
+        if (height < nHardFork) {
+            return "VGdEN0VScmdnQlBleng2SlBQMmJwV2pBRlFXMXJhZnpDbg==";
+        } else {
+            return "VG9aTHc5REdHdzJlNlVTYXpYUU5ZMjVZcGRpVUR3TU5wTQ==";
+        }
+    }
+}
+
 inline int64 GET_V_REWARDMAX()                { return 50 * COIN; }
 inline int64 GET_V_REWARDMIN(int nHeight=HF1) { return (nHeight<HF1)? 0 : COIN/2; }
 inline int64 GET_V_VOTE(int nHeight=HF1)      { return (nHeight<HF1)? 10*COIN : 5*COIN; }
