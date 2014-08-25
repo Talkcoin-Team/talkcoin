@@ -2453,6 +2453,20 @@ bool CBlock::AcceptBlock(CValidationState &state, CDiskBlockPos *dbp)
         if (pcheckpoint && nHeight < pcheckpoint->nHeight)
             return state.DoS(100, error("AcceptBlock() : forked chain older than last checkpoint (height %d)", nHeight));
 
+        
+        /* Don't accept v1 blocks after this point */
+        if((!fTestNet && (nTime > nSwitchV2)) || (fTestNet && (nTime > nTestnetSwitchV2))) {
+            CScript expect = CScript() << nHeight;
+            if(!std::equal(expect.begin(), expect.end(), vtx[0].vin[0].scriptSig.begin()))
+                return(state.DoS(100, error("AcceptBlock() : incorrect block height in coin base")));
+        }
+
+        /* Don't accept blocks with bogus nVersion numbers after this point */
+        if((!fTestNet && (nHeight >= nHardFork)) || (fTestNet && (nHeight >= nTestnetFork))) {
+            if(nVersion != 2)
+                return(state.DoS(100, error("AcceptBlock() : incorrect block version")));
+        }
+        
         // Reject block.nVersion=1 blocks when 95% (75% on testnet) of the network has upgraded:
         if (nVersion < 2)
         {

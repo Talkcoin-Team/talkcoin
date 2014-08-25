@@ -72,6 +72,12 @@ static const int fHaveUPnP = false;
 inline int64 rndVal(int64 nValue) { return (nValue/CENT)*CENT; }
 inline int64 pVal(int64 nValue, int64 p) { return nValue * (((double)p/COIN)/100.0); }
 
+// Temp fork dates to be decided later
+static const int nHardFork = 541110;  // Approx: Thu, 25 Sep 2014 17:00:00 GMT
+static const int nTestnetFork   =  600;
+static const unsigned int nSwitchV2            = 1411948800; // Mon, 29 Sep 2014 00:00:00 GMT
+static const unsigned int nTestnetSwitchV2     = 1409270400; // Fri, 29 Aug 2014 00:00:00 GMT
+
 extern CScript COINBASE_FLAGS;
 
 
