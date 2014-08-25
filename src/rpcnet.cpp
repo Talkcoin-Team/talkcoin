@@ -237,7 +237,7 @@ Value makekeypair(const Array& params, bool fHelp)
 
     Object result;
     result.push_back(Pair("PublicKey", HexStr(pubkey.begin(), pubkey.end())));
-    result.push_back(Pair("PrivateKey", CBitcoinSecret(key).ToString()));
+    result.push_back(Pair("PrivateKey", CTalkcoinSecret(key).ToString()));
     return result;
 }
 
