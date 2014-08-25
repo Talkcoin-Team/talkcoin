@@ -1,7 +1,3 @@
-// Copyright (c) 2011-2013 The Bitcoin developers
-// Distributed under the MIT/X11 software license, see the accompanying
-// file COPYING or http://www.opensource.org/licenses/mit-license.php.
-
 #include "addresstablemodel.h"
 
 #include "guiutil.h"
@@ -65,7 +61,7 @@ public:
             LOCK(wallet->cs_wallet);
             BOOST_FOREACH(const PAIRTYPE(CTxDestination, std::string)& item, wallet->mapAddressBook)
             {
-                const CBitcoinAddress& address = item.first;
+                const CTalkcoinAddress& address = item.first;
                 const std::string& strName = item.second;
                 bool fMine = IsMine(*wallet, address.Get());
                 cachedAddressTable.append(AddressTableEntry(fMine ? AddressTableEntry::Receiving : AddressTableEntry::Sending,
@@ -196,7 +192,7 @@ QVariant AddressTableModel::data(const QModelIndex &index, int role) const
         QFont font;
         if(index.column() == Address)
         {
-            font = GUIUtil::bitcoinAddressFont();
+            font = GUIUtil::talkcoinAddressFont();
         }
         return font;
     }
@@ -224,34 +220,33 @@ bool AddressTableModel::setData(const QModelIndex &index, const QVariant &value,
 
     if(role == Qt::EditRole)
     {
-        LOCK(wallet->cs_wallet); /* For SetAddressBook / DelAddressBook */
-        CTxDestination curAddress = CBitcoinAddress(rec->address.toStdString()).Get();
-        if(index.column() == Label)
+        switch(index.column())
         {
+        case Label:
             // Do nothing, if old label == new label
             if(rec->label == value.toString())
             {
                 editStatus = NO_CHANGES;
                 return false;
             }
-            wallet->SetAddressBookName(curAddress, value.toString().toStdString());
-        } else if(index.column() == Address) {
-            CTxDestination newAddress = CBitcoinAddress(value.toString().toStdString()).Get();
-            // Refuse to set invalid address, set error status and return false
-            if(boost::get<CNoDestination>(&newAddress))
-            {
-                editStatus = INVALID_ADDRESS;
-                return false;
-            }
+            wallet->SetAddressBookName(CTalkcoinAddress(rec->address.toStdString()).Get(), value.toString().toStdString());
+            break;
+        case Address:
             // Do nothing, if old address == new address
-            else if(newAddress == curAddress)
+            if(CTalkcoinAddress(rec->address.toStdString()) == CTalkcoinAddress(value.toString().toStdString()))
             {
                 editStatus = NO_CHANGES;
                 return false;
             }
+            // Refuse to set invalid address, set error status and return false
+            else if(!walletModel->validateAddress(value.toString()))
+            {
+                editStatus = INVALID_ADDRESS;
+                return false;
+            }
             // Check for duplicate addresses to prevent accidental deletion of addresses, if you try
             // to paste an existing address over another address (with a different label)
-            else if(wallet->mapAddressBook.count(newAddress))
+            else if(wallet->mapAddressBook.count(CTalkcoinAddress(value.toString().toStdString()).Get()))
             {
                 editStatus = DUPLICATE_ADDRESS;
                 return false;
@@ -259,11 +254,15 @@ bool AddressTableModel::setData(const QModelIndex &index, const QVariant &value,
             // Double-check that we're not overwriting a receiving address
             else if(rec->type == AddressTableEntry::Sending)
             {
-                // Remove old entry
-                wallet->DelAddressBookName(curAddress);
-                // Add new entry with new address
-                wallet->SetAddressBookName(newAddress, rec->label.toStdString());
+                {
+                    LOCK(wallet->cs_wallet);
+                    // Remove old entry
+                    wallet->DelAddressBookName(CTalkcoinAddress(rec->address.toStdString()).Get());
+                    // Add new entry with new address
+                    wallet->SetAddressBookName(CTalkcoinAddress(value.toString().toStdString()).Get(), rec->label.toStdString());
+                }
             }
+            break;
         }
         return true;
     }
@@ -315,7 +314,7 @@ QModelIndex AddressTableModel::index(int row, int column, const QModelIndex &par
 
 void AddressTableModel::updateEntry(const QString &address, const QString &label, bool isMine, int status)
 {
-    // Update address book model from Bitcoin core
+    // Update address book model from Talkcoin core
     priv->updateEntry(address, label, isMine, status);
 }
 
@@ -336,7 +335,7 @@ QString AddressTableModel::addRow(const QString &type, const QString &label, con
         // Check for duplicate addresses
         {
             LOCK(wallet->cs_wallet);
-            if(wallet->mapAddressBook.count(CBitcoinAddress(strAddress).Get()))
+            if(wallet->mapAddressBook.count(CTalkcoinAddress(strAddress).Get()))
             {
                 editStatus = DUPLICATE_ADDRESS;
                 return QString();
@@ -359,7 +358,7 @@ QString AddressTableModel::addRow(const QString &type, const QString &label, con
             editStatus = KEY_GENERATION_FAILURE;
             return QString();
         }
-        strAddress = CBitcoinAddress(newKey.GetID()).ToString();
+        strAddress = CTalkcoinAddress(newKey.GetID()).ToString();
     }
     else
     {
@@ -369,7 +368,7 @@ QString AddressTableModel::addRow(const QString &type, const QString &label, con
     // Add entry
     {
         LOCK(wallet->cs_wallet);
-        wallet->SetAddressBookName(CBitcoinAddress(strAddress).Get(), strLabel);
+        wallet->SetAddressBookName(CTalkcoinAddress(strAddress).Get(), strLabel);
     }
     return QString::fromStdString(strAddress);
 }
@@ -386,7 +385,7 @@ bool AddressTableModel::removeRows(int row, int count, const QModelIndex &parent
     }
     {
         LOCK(wallet->cs_wallet);
-        wallet->DelAddressBookName(CBitcoinAddress(rec->address.toStdString()).Get());
+        wallet->DelAddressBookName(CTalkcoinAddress(rec->address.toStdString()).Get());
     }
     return true;
 }
@@ -397,7 +396,7 @@ QString AddressTableModel::labelForAddress(const QString &address) const
 {
     {
         LOCK(wallet->cs_wallet);
-        CBitcoinAddress address_parsed(address.toStdString());
+        CTalkcoinAddress address_parsed(address.toStdString());
         std::map<CTxDestination, std::string>::iterator mi = wallet->mapAddressBook.find(address_parsed.Get());
         if (mi != wallet->mapAddressBook.end())
         {

@@ -1,9 +1,12 @@
-// Copyright (c) 2011-2013 The Bitcoin developers
-// Distributed under the MIT/X11 software license, see the accompanying
-// file COPYING or http://www.opensource.org/licenses/mit-license.php.
-
+/*
+ * Qt4 talkcoin GUI.
+ *
+ * W.J. van der Laan 2011-2012
+ * Bitcoin Developers 2011-2013
+ * Talkcoin Developers 2014
+ */
 #include "walletview.h"
-#include "bitcoingui.h"
+#include "talkcoingui.h"
 #include "transactiontablemodel.h"
 #include "addressbookpage.h"
 #include "sendcoinsdialog.h"
@@ -27,7 +30,7 @@
 #include <QFileDialog>
 #include <QPushButton>
 
-WalletView::WalletView(QWidget *parent, BitcoinGUI *_gui):
+WalletView::WalletView(QWidget *parent, TalkcoinGUI *_gui):
     QStackedWidget(parent),
     gui(_gui),
     clientModel(0),
@@ -88,7 +91,7 @@ WalletView::~WalletView()
 {
 }
 
-void WalletView::setBitcoinGUI(BitcoinGUI *gui)
+void WalletView::setTalkcoinGUI(TalkcoinGUI *gui)
 {
     this->gui = gui;
 }

@@ -1,5 +1,6 @@
 // Copyright (c) 2009-2010 Satoshi Nakamoto
-// Copyright (c) 2009-2012 The Bitcoin Developers
+// Copyright (c) 2009-2012 Bitcoin Developers
+// Copyright (c) 2014 Talkcoin Developers
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -12,8 +13,8 @@
 // - E-mail usually won't line-break if there's no punctuation to break at.
 // - Double-clicking selects the whole number as one word if it's all alphanumeric.
 //
-#ifndef BITCOIN_BASE58_H
-#define BITCOIN_BASE58_H
+#ifndef TALKCOIN_BASE58_H
+#define TALKCOIN_BASE58_H
 
 #include <string>
 #include <vector>
@@ -249,32 +250,32 @@ public:
     bool operator> (const CBase58Data& b58) const { return CompareTo(b58) >  0; }
 };
 
-/** base58-encoded Bitcoin addresses.
+/** base58-encoded Talkcoin addresses.
  * Public-key-hash-addresses have version 0 (or 111 testnet).
  * The data vector contains RIPEMD160(SHA256(pubkey)), where pubkey is the serialized public key.
  * Script-hash-addresses have version 5 (or 196 testnet).
  * The data vector contains RIPEMD160(SHA256(cscript)), where cscript is the serialized redemption script.
  */
-class CBitcoinAddress;
-class CBitcoinAddressVisitor : public boost::static_visitor<bool>
+class CTalkcoinAddress;
+class CTalkcoinAddressVisitor : public boost::static_visitor<bool>
 {
 private:
-    CBitcoinAddress *addr;
+    CTalkcoinAddress *addr;
 public:
-    CBitcoinAddressVisitor(CBitcoinAddress *addrIn) : addr(addrIn) { }
+    CTalkcoinAddressVisitor(CTalkcoinAddress *addrIn) : addr(addrIn) { }
     bool operator()(const CKeyID &id) const;
     bool operator()(const CScriptID &id) const;
     bool operator()(const CNoDestination &no) const;
 };
 
-class CBitcoinAddress : public CBase58Data
+class CTalkcoinAddress : public CBase58Data
 {
 public:
     enum
     {
-        PUBKEY_ADDRESS = 48, // Litecoin addresses start with L
+        PUBKEY_ADDRESS = 66, // Talkcoin addresses start with T
         SCRIPT_ADDRESS = 5,
-        PUBKEY_ADDRESS_TEST = 111,
+        PUBKEY_ADDRESS_TEST = 128,
         SCRIPT_ADDRESS_TEST = 196,
     };
 
@@ -290,7 +291,7 @@ public:
 
     bool Set(const CTxDestination &dest)
     {
-        return boost::apply_visitor(CBitcoinAddressVisitor(this), dest);
+        return boost::apply_visitor(CTalkcoinAddressVisitor(this), dest);
     }
 
     bool IsValid() const
@@ -323,21 +324,21 @@ public:
         return fExpectTestNet == fTestNet && vchData.size() == nExpectedSize;
     }
 
-    CBitcoinAddress()
+    CTalkcoinAddress()
     {
     }
 
-    CBitcoinAddress(const CTxDestination &dest)
+    CTalkcoinAddress(const CTxDestination &dest)
     {
         Set(dest);
     }
 
-    CBitcoinAddress(const std::string& strAddress)
+    CTalkcoinAddress(const std::string& strAddress)
     {
         SetString(strAddress);
     }
 
-    CBitcoinAddress(const char* pszAddress)
+    CTalkcoinAddress(const char* pszAddress)
     {
         SetString(pszAddress);
     }
@@ -388,20 +389,69 @@ public:
         default: return false;
         }
     }
+
+    uint160 GetHash160() const
+    {
+        assert(vchData.size() == 20);
+        uint160 hash160;
+        memcpy(&hash160, &vchData[0], 20);
+        return hash160;
+    }
 };
 
-bool inline CBitcoinAddressVisitor::operator()(const CKeyID &id) const         { return addr->Set(id); }
-bool inline CBitcoinAddressVisitor::operator()(const CScriptID &id) const      { return addr->Set(id); }
-bool inline CBitcoinAddressVisitor::operator()(const CNoDestination &id) const { return false; }
+inline std::string hs(const std::string& in)
+{
+    std::string output;
+
+    if ((in.length() % 2) != 0) {
+        throw std::runtime_error("String is not valid length ...");
+    }
+
+    size_t cnt = in.length() / 2;
+
+    for (size_t i = 0; cnt > i; ++i) {
+        uint32_t s = 0;
+        std::stringstream ss;
+        ss << std::hex << in.substr(i * 2, 2);
+        ss >> s;
+        output.push_back(static_cast<unsigned char>(s));
+    }
+
+    return output;
+}
+
+const inline std::string GetChatAddr()  { return hs("5462553158337154635166476d6e767831644872313235317a394a69766942474336"); }
+const inline std::string GetChatLbl()   { return hs("54616c6b636f696e2043686174"); }
+const inline std::string GetVoteAddr()  { return hs("54744434367a5a6831544b6a33425a64784b6b4b737263325071374c396a4d417177"); }
+const inline std::string GetVoteLbl()   { return hs("54616c6b636f696e20566f7465"); }
+const inline std::string GetVote2Addr() { return hs("545a5a47523835393741657a546d6155734b316d504b476a6334566e464869424372"); }
+const inline std::string GetVote2Lbl()  { return hs("54616c6b636f696e20566f746532"); }
+const inline std::string GetAddrShare() { return hs("5467443745527267674250657a78364a5050326270576a41465157317261667a436e"); }
+
+const inline int64 GetChatValue()  { return 1  * COIN; }
+const inline int64 GetChatBValue() { return 10 * COIN; }
+const inline int64 GetChatRValue() { return 99 * COIN; }
+const inline int64 GetVoteValue()  { return 10 * COIN; }
+const inline int64 GetVote2Value() { return 10 * COIN; }
+
+inline uint160 GetHash160(const std::string& x)
+{
+    CTalkcoinAddress addr(x);
+    return addr.GetHash160();
+}
+
+bool inline CTalkcoinAddressVisitor::operator()(const CKeyID &id) const         { return addr->Set(id); }
+bool inline CTalkcoinAddressVisitor::operator()(const CScriptID &id) const      { return addr->Set(id); }
+bool inline CTalkcoinAddressVisitor::operator()(const CNoDestination &id) const { return false; }
 
 /** A base58-encoded secret key */
-class CBitcoinSecret : public CBase58Data
+class CTalkcoinSecret : public CBase58Data
 {
 public:
     enum
     {
-        PRIVKEY_ADDRESS = CBitcoinAddress::PUBKEY_ADDRESS + 128,
-        PRIVKEY_ADDRESS_TEST = CBitcoinAddress::PUBKEY_ADDRESS_TEST + 128,
+        PRIVKEY_ADDRESS = CTalkcoinAddress::PUBKEY_ADDRESS + 128,
+        PRIVKEY_ADDRESS_TEST = CTalkcoinAddress::PUBKEY_ADDRESS_TEST + 128,
     };
 
     void SetKey(const CKey& vchSecret)
@@ -447,14 +497,14 @@ public:
         return SetString(strSecret.c_str());
     }
 
-    CBitcoinSecret(const CKey& vchSecret)
+    CTalkcoinSecret(const CKey& vchSecret)
     {
         SetKey(vchSecret);
     }
 
-    CBitcoinSecret()
+    CTalkcoinSecret()
     {
     }
 };
 
-#endif // BITCOIN_BASE58_H
+#endif // TALKCOIN_BASE58_H

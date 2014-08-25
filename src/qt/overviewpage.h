@@ -1,7 +1,3 @@
-// Copyright (c) 2011-2013 The Bitcoin developers
-// Distributed under the MIT/X11 software license, see the accompanying
-// file COPYING or http://www.opensource.org/licenses/mit-license.php.
-
 #ifndef OVERVIEWPAGE_H
 #define OVERVIEWPAGE_H
 
@@ -32,6 +28,9 @@ public:
     void setWalletModel(WalletModel *walletModel);
     void showOutOfSyncWarning(bool fShow);
 
+protected:
+    bool eventFilter(QObject *object, QEvent *event);
+
 public slots:
     void setBalance(qint64 balance, qint64 unconfirmedBalance, qint64 immatureBalance);
 
@@ -49,10 +48,22 @@ private:
     TxViewDelegate *txdelegate;
     TransactionFilterProxy *filter;
 
+    QTimer *t_action;
+    bool bVote;
+
 private slots:
     void updateDisplayUnit();
     void handleTransactionClicked(const QModelIndex &index);
     void updateAlerts(const QString &warnings);
+
+    void showAction();
+    void showVote();
+    void showChat();
+    void on_btnVote_clicked();
+    void on_spbVote_valueChanged(int arg1);
+    void on_btnChatSend_clicked();
+    void on_txtChatNick_textChanged(const QString &arg1);
+    void on_txtChatMsg_textChanged(const QString &arg1);
 };
 
 #endif // OVERVIEWPAGE_H

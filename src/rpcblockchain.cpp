@@ -1,10 +1,11 @@
 // Copyright (c) 2010 Satoshi Nakamoto
-// Copyright (c) 2009-2014 The Bitcoin developers
+// Copyright (c) 2009-2012 Bitcoin Developers
+// Copyright (c) 2014 Talkcoin Developers
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #include "main.h"
-#include "bitcoinrpc.h"
+#include "talkcoinrpc.h"
 
 using namespace json_spirit;
 using namespace std;
@@ -106,8 +107,8 @@ Value settxfee(const Array& params, bool fHelp)
 {
     if (fHelp || params.size() < 1 || params.size() > 1)
         throw runtime_error(
-            "settxfee <amount LTC/KB>\n"
-            "<amount> is a real and is rounded to the nearest 0.00000001 LTC per KB");
+            "settxfee <amount>\n"
+            "<amount> is a real and is rounded to the nearest 0.00000001");
 
     // Amount
     int64 nAmount = 0;
@@ -259,7 +260,7 @@ Value verifychain(const Array& params, bool fHelp)
             "Verifies blockchain database.");
 
     int nCheckLevel = GetArg("-checklevel", 3);
-    int nCheckDepth = GetArg("-checkblocks", 288);
+    int nCheckDepth = GetArg("-checkblocks", 720);
     if (params.size() > 0)
         nCheckLevel = params[0].get_int();
     if (params.size() > 1)

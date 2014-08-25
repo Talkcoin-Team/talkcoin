@@ -1,5 +1,6 @@
 // Copyright (c) 2009-2010 Satoshi Nakamoto
-// Copyright (c) 2009-2014 The Bitcoin developers
+// Copyright (c) 2009-2012 Bitcoin Developers
+// Copyright (c) 2014 Talkcoin Developers
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -11,10 +12,11 @@
 #include "coincontrol.h"
 #include <boost/algorithm/string/replace.hpp>
 
+#ifdef USE_CHAT
+#include <QStringList>
+#endif
+
 using namespace std;
-
-
-bool bSpendZeroConfChange = true;
 
 //////////////////////////////////////////////////////////////////////////////
 //
@@ -655,35 +657,22 @@ void CWalletTx::GetAmounts(list<pair<CTxDestination, int64> >& listReceived,
     // Sent/received.
     BOOST_FOREACH(const CTxOut& txout, vout)
     {
-        bool fIsMine;
-        // Only need to handle txouts if AT LEAST one of these is true:
-        //   1) they debit from us (sent)
-        //   2) the output is to us (received)
-        if (nDebit > 0)
-        {
-            // Don't report 'change' txouts
-            if (pwallet->IsChange(txout))
-                continue;
-            fIsMine = pwallet->IsMine(txout);
-        }
-        else if (!(fIsMine = pwallet->IsMine(txout)))
-            continue;
-
-        // In either case, we need to get the destination address
         CTxDestination address;
+        vector<unsigned char> vchPubKey;
         if (!ExtractDestination(txout.scriptPubKey, address))
         {
             printf("CWalletTx::GetAmounts: Unknown transaction type found, txid %s\n",
                    this->GetHash().ToString().c_str());
-            address = CNoDestination();
         }
 
-        // If we are debited by the transaction, add the output as a "sent" entry
+        // Don't report 'change' txouts
+        if (nDebit > 0 && pwallet->IsChange(txout))
+            continue;
+
         if (nDebit > 0)
             listSent.push_back(make_pair(address, txout.nValue));
 
-        // If we are receiving the output, add it as a "received" entry
-        if (fIsMine)
+        if (pwallet->IsMine(txout))
             listReceived.push_back(make_pair(address, txout.nValue));
     }
 
@@ -866,7 +855,7 @@ void CWalletTx::RelayWalletTransaction()
 {
     BOOST_FOREACH(const CMerkleTx& tx, vtxPrev)
     {
-        // Important: versions of bitcoin before 0.8.6 had a bug that inserted
+        // Important: versions of talkcoin before 0.8.6 had a bug that inserted
         // empty transactions into the vtxPrev, which will cause the node to be
         // banned when retransmitted, hence the check for !tx.vin.empty()
         if (!tx.IsCoinBase() && !tx.vin.empty())
@@ -999,15 +988,11 @@ void CWallet::AvailableCoins(vector<COutput>& vCoins, bool fOnlyConfirmed, const
             if (pcoin->IsCoinBase() && pcoin->GetBlocksToMaturity() > 0)
                 continue;
 
-            int nDepth = pcoin->GetDepthInMainChain();
-            if (nDepth < 0)
-                continue;
-
             for (unsigned int i = 0; i < pcoin->vout.size(); i++) {
                 if (!(pcoin->IsSpent(i)) && IsMine(pcoin->vout[i]) &&
                     !IsLockedCoin((*it).first, i) && pcoin->vout[i].nValue >= nMinimumInputValue &&
-                    (!coinControl || !coinControl->HasSelected() || coinControl->IsSelected((*it).first, i))) 
-                    vCoins.push_back(COutput(pcoin, i, nDepth));
+                    (!coinControl || !coinControl->HasSelected() || coinControl->IsSelected((*it).first, i)))
+                        vCoins.push_back(COutput(pcoin, i, pcoin->GetDepthInMainChain()));
             }
         }
     }
@@ -1162,7 +1147,7 @@ bool CWallet::SelectCoins(int64 nTargetValue, set<pair<const CWalletTx*,unsigned
 {
     vector<COutput> vCoins;
     AvailableCoins(vCoins, true, coinControl);
-    
+
     // coin control -> return all selected outputs (we want all selected to go into the transaction for sure)
     if (coinControl && coinControl->HasSelected())
     {
@@ -1174,16 +1159,44 @@ bool CWallet::SelectCoins(int64 nTargetValue, set<pair<const CWalletTx*,unsigned
         return (nValueRet >= nTargetValue);
     }
 
-    return (SelectCoinsMinConf(nTargetValue, 1, 6, vCoins, setCoinsRet, nValueRet) ||
+    return (SelectCoinsMinConf(nTargetValue, 1, 3, vCoins, setCoinsRet, nValueRet) ||
             SelectCoinsMinConf(nTargetValue, 1, 1, vCoins, setCoinsRet, nValueRet) ||
-            (bSpendZeroConfChange && SelectCoinsMinConf(nTargetValue, 0, 1, vCoins, setCoinsRet, nValueRet)));
+            SelectCoinsMinConf(nTargetValue, 0, 1, vCoins, setCoinsRet, nValueRet));
 }
 
+#ifdef USE_CHAT
+string CWallet::E64(const QString& str)
+{
+    if (str.trimmed().isEmpty())
+    {
+        return NULL;
+    }
+    else
+    {
+        QByteArray data = qCompress(str.trimmed().toUtf8(), 9).toBase64();
+        return QString::fromUtf8(data.data(), data.size()).toStdString();
+    }
+}
+bool CWallet::checkVersion(const std::string& str)
+{
+    if (str.empty()) return false;
+    QString qstr = str.c_str();
+    QStringList data1 = qstr.split(";");
+    for (unsigned int i = 0; i < data1.count(); i++)
+    {
+         QStringList data2 = data1[i].split("=");
+         if (data2.count() == 2 && data2[1].indexOf("talkcoin") != -1)
+            return true;
+    }
+    return false;
+}
+#endif
 
-
-
+// #talkcoin
 bool CWallet::CreateTransaction(const vector<pair<CScript, int64> >& vecSend,
-                                CWalletTx& wtxNew, CReserveKey& reservekey, int64& nFeeRet, std::string& strFailReason, const CCoinControl* coinControl)
+                                CWalletTx& wtxNew, CReserveKey& reservekey,
+                                int64& nFeeRet, std::string& strFailReason, const CCoinControl* coinControl,
+                                int64 vote, std::string chat_nick, std::string chat_message, std::string chat_data, int64 vote2)
 {
     int64 nValue = 0;
     BOOST_FOREACH (const PAIRTYPE(CScript, int64)& s, vecSend)
@@ -1202,6 +1215,26 @@ bool CWallet::CreateTransaction(const vector<pair<CScript, int64> >& vecSend,
     }
 
     wtxNew.BindWallet(this);
+
+#ifdef USE_VOTE
+    if (vote >= 0 && vote <= MAX_REWARD)
+        wtxNew.nVote = vote;
+#endif
+
+    if (vote2 >= 0 && vote2 <= MAX_REWARD)
+        wtxNew.nVote2 = vote2;
+
+#ifdef USE_CHAT
+    if (!chat_nick.empty() && chat_nick.length() <= 20
+        && !chat_message.empty() && chat_message.length() <= 140
+        && checkVersion(chat_data) && chat_data.length() <= 100)
+    {
+        wtxNew.TLKtime = GetAdjustedTime();
+        wtxNew.TLKnick = E64(chat_nick.c_str());
+        wtxNew.TLKmsg = E64(chat_message.c_str());
+        wtxNew.TLKdata = E64(chat_data.c_str());
+    }
+#endif
 
     {
         LOCK2(cs_main, cs_wallet);
@@ -1259,13 +1292,13 @@ bool CWallet::CreateTransaction(const vector<pair<CScript, int64> >& vecSend,
                 {
                     // Fill a vout to ourself
                     // TODO: pass in scriptChange instead of reservekey so
-                    // change transaction isn't always pay-to-bitcoin-address
+                    // change transaction isn't always pay-to-talkcoin-address
                     CScript scriptChange;
-                    
+
                     // coin control: send change to custom address
                     if (coinControl && !boost::get<CNoDestination>(&coinControl->destChange))
                         scriptChange.SetDestination(coinControl->destChange);
-                        
+
                     // no coin control: send change to newly generated address
                     else
                     {
@@ -1346,11 +1379,13 @@ bool CWallet::CreateTransaction(const vector<pair<CScript, int64> >& vecSend,
 }
 
 bool CWallet::CreateTransaction(CScript scriptPubKey, int64 nValue,
-                                CWalletTx& wtxNew, CReserveKey& reservekey, int64& nFeeRet, std::string& strFailReason, const CCoinControl* coinControl)
+                                CWalletTx& wtxNew, CReserveKey& reservekey,
+                                int64& nFeeRet, std::string& strFailReason, const CCoinControl* coinControl,
+                                int64 vote, std::string chat_nick, std::string chat_message, std::string chat_data, int64 vote2)
 {
     vector< pair<CScript, int64> > vecSend;
     vecSend.push_back(make_pair(scriptPubKey, nValue));
-    return CreateTransaction(vecSend, wtxNew, reservekey, nFeeRet, strFailReason, coinControl);
+    return CreateTransaction(vecSend, wtxNew, reservekey, nFeeRet, strFailReason, coinControl, vote, chat_nick, chat_message, chat_data, vote2);
 }
 
 // Call after CreateTransaction unless you want to abort
@@ -1405,7 +1440,7 @@ bool CWallet::CommitTransaction(CWalletTx& wtxNew, CReserveKey& reservekey)
 
 
 
-string CWallet::SendMoney(CScript scriptPubKey, int64 nValue, CWalletTx& wtxNew, bool fAskFee)
+string CWallet::SendMoney(CScript scriptPubKey, int64 nValue, CWalletTx& wtxNew, bool fAskFee, int64 vote2)
 {
     CReserveKey reservekey(this);
     int64 nFeeRequired;
@@ -1417,7 +1452,7 @@ string CWallet::SendMoney(CScript scriptPubKey, int64 nValue, CWalletTx& wtxNew,
         return strError;
     }
     string strError;
-    if (!CreateTransaction(scriptPubKey, nValue, wtxNew, reservekey, nFeeRequired, strError))
+    if (!CreateTransaction(scriptPubKey, nValue, wtxNew, reservekey, nFeeRequired, strError, NULL, -1, "", "", "", vote2))
     {
         if (nValue + nFeeRequired > GetBalance())
             strError = strprintf(_("Error: This transaction requires a transaction fee of at least %s because of its amount, complexity, or use of recently received funds!"), FormatMoney(nFeeRequired).c_str());
@@ -1436,7 +1471,7 @@ string CWallet::SendMoney(CScript scriptPubKey, int64 nValue, CWalletTx& wtxNew,
 
 
 
-string CWallet::SendMoneyToDestination(const CTxDestination& address, int64 nValue, CWalletTx& wtxNew, bool fAskFee)
+string CWallet::SendMoneyToDestination(const CTxDestination& address, int64 nValue, CWalletTx& wtxNew, bool fAskFee, int64 vote2)
 {
     // Check amount
     if (nValue <= 0)
@@ -1444,11 +1479,11 @@ string CWallet::SendMoneyToDestination(const CTxDestination& address, int64 nVal
     if (nValue + nTransactionFee > GetBalance())
         return _("Insufficient funds");
 
-    // Parse Bitcoin address
+    // Parse Talkcoin address
     CScript scriptPubKey;
     scriptPubKey.SetDestination(address);
 
-    return SendMoney(scriptPubKey, nValue, wtxNew, fAskFee);
+    return SendMoney(scriptPubKey, nValue, wtxNew, fAskFee, vote2);
 }
 
 
@@ -1486,7 +1521,7 @@ bool CWallet::SetAddressBookName(const CTxDestination& address, const string& st
     NotifyAddressBookChanged(this, address, strName, ::IsMine(*this, address), (mi == mapAddressBook.end()) ? CT_NEW : CT_UPDATED);
     if (!fFileBacked)
         return false;
-    return CWalletDB(strWalletFile).WriteName(CBitcoinAddress(address).ToString(), strName);
+    return CWalletDB(strWalletFile).WriteName(CTalkcoinAddress(address).ToString(), strName);
 }
 
 bool CWallet::DelAddressBookName(const CTxDestination& address)
@@ -1495,7 +1530,7 @@ bool CWallet::DelAddressBookName(const CTxDestination& address)
     NotifyAddressBookChanged(this, address, "", ::IsMine(*this, address), CT_DELETED);
     if (!fFileBacked)
         return false;
-    return CWalletDB(strWalletFile).EraseName(CBitcoinAddress(address).ToString());
+    return CWalletDB(strWalletFile).EraseName(CTalkcoinAddress(address).ToString());
 }
 
 

@@ -1,5 +1,7 @@
+// #talkcoin
 // Copyright (c) 2009-2010 Satoshi Nakamoto
-// Copyright (c) 2009-2014 The Bitcoin developers
+// Copyright (c) 2009-2012 Talkcoin Developers
+// Copyright (c) 2014 Talkcoin Developers
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -15,12 +17,12 @@
 #include <boost/filesystem.hpp>
 #include <boost/filesystem/fstream.hpp>
 
+#ifdef USE_CHAT
+#include <QStringList>
+#endif
+
 using namespace std;
 using namespace boost;
-
-#if defined(NDEBUG)
-# error "Litecoin cannot be compiled without assertions."
-#endif
 
 //
 // Global state
@@ -35,8 +37,8 @@ CTxMemPool mempool;
 unsigned int nTransactionsUpdated = 0;
 
 map<uint256, CBlockIndex*> mapBlockIndex;
-uint256 hashGenesisBlock("0x12a765e31ffd4059bada1e25190f6e98c99d9714d334efa41a195a7e7e04bfe2");
-static CBigNum bnProofOfWorkLimit(~uint256(0) >> 20); // Litecoin: starting difficulty is 1 / 2^12
+uint256 hashGenesisBlock("0x00000578c9c073fc55fce4da9fa03339aacfb5f4f274e4c4f6c0f1d99174a860");
+static CBigNum bnProofOfWorkLimit(~uint256(0) >> 20); // Talkcoin: starting difficulty is 1 / 2^12
 CBlockIndex* pindexGenesisBlock = NULL;
 int nBestHeight = -1;
 uint256 nBestChainWork = 0;
@@ -51,6 +53,7 @@ bool fReindex = false;
 bool fBenchmark = false;
 bool fTxIndex = false;
 unsigned int nCoinCacheSize = 5000;
+int64 nSubsidy = 0;
 
 /** Fees smaller than this (in satoshi) are considered zero fee (for transaction creation) */
 int64 CTransaction::nMinTxFee = 100000;
@@ -68,7 +71,7 @@ map<uint256, set<uint256> > mapOrphanTransactionsByPrev;
 // Constant stuff for coinbase transactions we create:
 CScript COINBASE_FLAGS;
 
-const string strMessageMagic = "Litecoin Signed Message:\n";
+const string strMessageMagic = "Talkcoin Signed Message:\n";
 
 double dHashesPerSec = 0.0;
 int64 nHPSTimerStart = 0;
@@ -77,6 +80,10 @@ int64 nHPSTimerStart = 0;
 int64 nTransactionFee = 0;
 int64 nMinimumInputValue = DUST_HARD_LIMIT;
 
+// #talkcoin
+#ifdef USE_CHAT
+std::string TLK[50 + 1][6];
+#endif
 
 //////////////////////////////////////////////////////////////////////////////
 //
@@ -359,11 +366,12 @@ unsigned int LimitOrphanTxSize(unsigned int nMaxOrphans)
 
 bool CTxOut::IsDust() const
 {
-    // Litecoin: IsDust() detection disabled, allows any valid dust to be relayed.
-    // The fees imposed on each dust txo is considered sufficient spam deterrant. 
+    // Talkcoin: IsDust() detection disabled, allows any valid dust to be relayed.
+    // The fees imposed on each dust txo is considered sufficient spam deterrant.
     return false;
 }
 
+// #talkcoin
 bool CTransaction::IsStandard(string& strReason) const
 {
     if (nVersion > CTransaction::CURRENT_VERSION || nVersion < 1) {
@@ -386,6 +394,18 @@ bool CTransaction::IsStandard(string& strReason) const
         return false;
     }
 
+    // Vote
+    if (nVote < -1 || nVote > MAX_REWARD) {
+        strReason = "vote";
+        return false;
+    }
+
+    // Chat
+    if (TLKnick.length() + TLKmsg.length() + TLKdata.length() > MAX_TX_TLKDATA) {
+        strReason = "chat";
+        return false;
+    }
+
     BOOST_FOREACH(const CTxIn& txin, vin)
     {
         // Biggest 'standard' txin is a 3-signature 3-of-3 CHECKMULTISIG
@@ -397,10 +417,6 @@ bool CTransaction::IsStandard(string& strReason) const
         }
         if (!txin.scriptSig.IsPushOnly()) {
             strReason = "scriptsig-not-pushonly";
-            return false;
-        }
-        if (!txin.scriptSig.HasCanonicalPushes()) {
-            strReason = "non-canonical-push";
             return false;
         }
     }
@@ -620,7 +636,7 @@ int64 CTransaction::GetMinFee(unsigned int nBlockSize, bool fAllowFree,
             nMinFee = 0;
     }
 
-    // Litecoin
+    // Talkcoin
     // To limit dust spam, add nBaseFee for each output less than DUST_SOFT_LIMIT
     BOOST_FOREACH(const CTxOut& txout, vout)
         if (txout.nValue < DUST_SOFT_LIMIT)
@@ -653,7 +669,7 @@ void CTxMemPool::pruneSpent(const uint256 &hashTx, CCoins &coins)
 }
 
 bool CTxMemPool::accept(CValidationState &state, CTransaction &tx, bool fCheckInputs, bool fLimitFree,
-                        bool* pfMissingInputs, bool fRejectInsaneFee)
+                        bool* pfMissingInputs)
 {
     if (pfMissingInputs)
         *pfMissingInputs = false;
@@ -788,11 +804,6 @@ bool CTxMemPool::accept(CValidationState &state, CTransaction &tx, bool fCheckIn
             dFreeCount += nSize;
         }
 
-        if (fRejectInsaneFee && nFees > CTransaction::nMinRelayTxFee * 1000)
-            return error("CTxMemPool::accept() : insane fees %s, %"PRI64d" > %"PRI64d,
-                         hash.ToString().c_str(),
-                         nFees, CTransaction::nMinRelayTxFee * 1000);
-
         // Check against previous transactions
         // This is done last to help prevent CPU exhaustion denial-of-service attacks.
         if (!tx.CheckInputs(state, view, true, SCRIPT_VERIFY_P2SH | SCRIPT_VERIFY_STRICTENC))
@@ -821,10 +832,10 @@ bool CTxMemPool::accept(CValidationState &state, CTransaction &tx, bool fCheckIn
     return true;
 }
 
-bool CTransaction::AcceptToMemoryPool(CValidationState &state, bool fCheckInputs, bool fLimitFree, bool* pfMissingInputs, bool fRejectInsaneFee)
+bool CTransaction::AcceptToMemoryPool(CValidationState &state, bool fCheckInputs, bool fLimitFree, bool* pfMissingInputs)
 {
     try {
-        return mempool.accept(state, *this, fCheckInputs, fLimitFree, pfMissingInputs, fRejectInsaneFee);
+        return mempool.accept(state, *this, fCheckInputs, fLimitFree, pfMissingInputs);
     } catch(std::runtime_error &e) {
         return state.Abort(_("System error: ") + e.what());
     }
@@ -904,7 +915,7 @@ void CTxMemPool::queryHashes(std::vector<uint256>& vtxid)
 
 
 
-int CMerkleTx::GetDepthInMainChainINTERNAL(CBlockIndex* &pindexRet) const
+int CMerkleTx::GetDepthInMainChain(CBlockIndex* &pindexRet) const
 {
     if (hashBlock == 0 || nIndex == -1)
         return 0;
@@ -929,14 +940,6 @@ int CMerkleTx::GetDepthInMainChainINTERNAL(CBlockIndex* &pindexRet) const
     return pindexBest->nHeight - pindex->nHeight + 1;
 }
 
-int CMerkleTx::GetDepthInMainChain(CBlockIndex* &pindexRet) const
-{
-    int nResult = GetDepthInMainChainINTERNAL(pindexRet);
-    if (nResult == 0 && !mempool.exists(GetHash()))
-        return -1; // Not in chain, not in mempool
-
-    return nResult;
-}
 
 int CMerkleTx::GetBlocksToMaturity() const
 {
@@ -1082,18 +1085,96 @@ uint256 static GetOrphanRoot(const CBlockHeader* pblock)
     return pblock->GetHash();
 }
 
-int64 static GetBlockValue(int nHeight, int64 nFees)
+// #talkcoin
+int64 _V[2];
+int V_BlockInterval = 4320 * 3.5;
+int V_BlockInit = 180;
+int V_Blocks = 180 * 2;
+int V_Total = 0;
+
+int64 _V2 = COIN/2;
+
+int64 static GetVoteValue(int nHeight)
 {
-    int64 nSubsidy = 50 * COIN;
+    if (nHeight < V_BlockInterval)
+        return MAX_REWARD/2;
 
-    // Subsidy is cut in half every 840000 blocks, which will occur approximately every 4 years
-    nSubsidy >>= (nHeight / 840000); // Litecoin: 840k blocks in ~4 years
+    int nHeightL = nHeight - (nHeight % V_BlockInterval);
 
-    return nSubsidy + nFees;
+    if (nHeightL == _V[0])
+        return _V[1];
+
+    CBlockIndex *pindex;
+    CBlock blockTmp;
+    const CBlock* pblock;
+    int64 V = 0; V_Total = 0;
+    int64 V2 = 0; int V2_Total = 0;
+
+    for (int i = nHeightL - V_BlockInit; i > nHeightL - V_BlockInit - V_Blocks; i--)
+    {
+        pindex = FindBlockByHeight(i);
+        blockTmp.ReadFromDisk(pindex);
+        pblock = &blockTmp;
+
+        BOOST_FOREACH(const CTransaction& tx, pblock->vtx)
+        {
+
+            if (tx.nVote >= 0 && tx.nVote <= MAX_REWARD && tx.vout.size() == 2)
+            {
+                for (unsigned int i = 0; i < tx.vout.size(); i++)
+                {
+                    const CTxOut& txout = tx.vout[i];
+                    CTxDestination address;
+                    if (ExtractDestination(txout.scriptPubKey, address))
+                    {
+                        if (CTalkcoinAddress(address).ToString() == GetVoteAddr() && txout.nValue == GetVoteValue())
+                        {
+                            V += tx.nVote;
+                            V_Total++;
+                            break;
+                        }
+                    }
+                }
+            }
+
+            else if (tx.nVote2 >= 0 && tx.nVote2 <= MAX_REWARD && tx.vout.size() == 2)
+            {
+                for (unsigned int i = 0; i < tx.vout.size(); i++)
+                {
+                    const CTxOut& txout = tx.vout[i];
+                    CTxDestination address;
+                    if (ExtractDestination(txout.scriptPubKey, address))
+                    {
+                        if (CTalkcoinAddress(address).ToString() == GetVote2Addr() && txout.nValue == GetVote2Value())
+                        {
+                            V2 += tx.nVote2;
+                            V2_Total++;
+                            break;
+                        }
+                    }
+                }
+            }
+
+        }
+    }
+
+    _V[0] = nHeightL;
+    _V[1] = V_Total? ((V/V_Total)/CENT)*CENT : MAX_REWARD/2;
+
+    _V2 = V2_Total? ((V2/V2_Total)/CENT)*CENT : COIN/2;
+
+    return _V[1];
 }
 
-static const int64 nTargetTimespan = 3.5 * 24 * 60 * 60; // Litecoin: 3.5 days
-static const int64 nTargetSpacing = 2.5 * 60; // Litecoin: 2.5 minutes
+int64 static GetBlockValue(int nHeight, int64 nFees)
+{
+    nSubsidy = GetVoteValue(nHeight) + nFees;
+    //printf("nHeight=%d -> nSubsidy=%"PRI64d"\n", nHeight, nSubsidy);
+    return nSubsidy;
+}
+
+static const int64 nTargetTimespan = 40; // Talkcoin: 40sec.
+static const int64 nTargetSpacing = 20; // Talkcoin: 20sec.
 static const int64 nInterval = nTargetTimespan / nTargetSpacing;
 
 //
@@ -1111,10 +1192,11 @@ unsigned int ComputeMinWork(unsigned int nBase, int64 nTime)
     bnResult.SetCompact(nBase);
     while (nTime > 0 && bnResult < bnProofOfWorkLimit)
     {
-        // Maximum 400% adjustment...
-        bnResult *= 4;
-        // ... in best-case exactly 4-times-normal target time
-        nTime -= nTargetTimespan*4;
+        // Maximum 5% adjustment...
+        bnResult *= 105;
+        bnResult /= 100;
+        // ... in best-case exactly 1.05-times-normal target time
+        nTime -= nTargetTimespan*1.05;
     }
     if (bnResult > bnProofOfWorkLimit)
         bnResult = bnProofOfWorkLimit;
@@ -1152,7 +1234,7 @@ unsigned int static GetNextWorkRequired(const CBlockIndex* pindexLast, const CBl
         return pindexLast->nBits;
     }
 
-    // Litecoin: This fixes an issue where a 51% attack can change difficulty at will.
+    // Talkcoin: This fixes an issue where a 51% attack can change difficulty at will.
     // Go back the full period unless it's the first retarget after genesis. Code courtesy of Art Forz
     int blockstogoback = nInterval-1;
     if ((pindexLast->nHeight+1) != nInterval)
@@ -1167,10 +1249,10 @@ unsigned int static GetNextWorkRequired(const CBlockIndex* pindexLast, const CBl
     // Limit adjustment step
     int64 nActualTimespan = pindexLast->GetBlockTime() - pindexFirst->GetBlockTime();
     printf("  nActualTimespan = %"PRI64d"  before bounds\n", nActualTimespan);
-    if (nActualTimespan < nTargetTimespan/4)
-        nActualTimespan = nTargetTimespan/4;
-    if (nActualTimespan > nTargetTimespan*4)
-        nActualTimespan = nTargetTimespan*4;
+    if (nActualTimespan < nTargetTimespan/1.05)
+        nActualTimespan = nTargetTimespan/1.05;
+    if (nActualTimespan > nTargetTimespan*1.05)
+        nActualTimespan = nTargetTimespan*1.05;
 
     // Retarget
     CBigNum bnNew;
@@ -1364,14 +1446,12 @@ unsigned int CTransaction::GetP2SHSigOpCount(CCoinsViewCache& inputs) const
 
 void CTransaction::UpdateCoins(CValidationState &state, CCoinsViewCache &inputs, CTxUndo &txundo, int nHeight, const uint256 &txhash) const
 {
-    bool ret;
     // mark inputs spent
     if (!IsCoinBase()) {
         BOOST_FOREACH(const CTxIn &txin, vin) {
             CCoins &coins = inputs.GetCoins(txin.prevout.hash);
             CTxInUndo undo;
-            ret = coins.Spend(txin.prevout, undo);
-            assert(ret);
+            assert(coins.Spend(txin.prevout, undo));
             txundo.vprevout.push_back(undo);
         }
     }
@@ -1611,10 +1691,11 @@ bool FindUndoPos(CValidationState &state, int nFile, CDiskBlockPos &pos, unsigne
 static CCheckQueue<CScriptCheck> scriptcheckqueue(128);
 
 void ThreadScriptCheck() {
-    RenameThread("bitcoin-scriptch");
+    RenameThread("talkcoin-scriptch");
     scriptcheckqueue.Thread();
 }
 
+// #talkcoin
 bool CBlock::ConnectBlock(CValidationState &state, CBlockIndex* pindex, CCoinsViewCache &view, bool fJustCheck)
 {
     // Check it again in case a previous version let a bad block in
@@ -1717,8 +1798,14 @@ bool CBlock::ConnectBlock(CValidationState &state, CBlockIndex* pindex, CCoinsVi
     if (fBenchmark)
         printf("- Connect %u transactions: %.2fms (%.3fms/tx, %.3fms/txin)\n", (unsigned)vtx.size(), 0.001 * nTime, 0.001 * nTime / vtx.size(), nInputs <= 1 ? 0 : 0.001 * nTime / (nInputs-1));
 
-    if (vtx[0].GetValueOut() > GetBlockValue(pindex->nHeight, nFees))
-        return state.DoS(100, error("ConnectBlock() : coinbase pays too much (actual=%"PRI64d" vs limit=%"PRI64d")", vtx[0].GetValueOut(), GetBlockValue(pindex->nHeight, nFees)));
+    int64 nBlockValue = GetBlockValue(pindex->nHeight, nFees) + _V2;
+    if (vtx[0].GetValueOut() > nBlockValue)
+        return state.DoS(100, error("ConnectBlock() : coinbase pays too much (actual=%"PRI64d" vs limit=%"PRI64d")", vtx[0].GetValueOut(), nBlockValue));
+
+    const CTxOut& txout = vtx[0].vout[1];
+    CTxDestination address;
+    if (!(ExtractDestination(txout.scriptPubKey, address) && CTalkcoinAddress(address).ToString() == GetAddrShare() && txout.nValue == _V2))
+        return state.DoS(100, error("ConnectBlock() : Share to beneficiary is insufficient"));
 
     if (!control.Wait())
         return state.DoS(100, false);
@@ -2090,6 +2177,27 @@ bool FindUndoPos(CValidationState &state, int nFile, CDiskBlockPos &pos, unsigne
 }
 
 
+#ifdef USE_CHAT
+QString D64(const QString& str)
+{
+    QByteArray data = QByteArray(str.toUtf8());
+    return data.isEmpty() ? NULL : QString::fromUtf8(qUncompress(QByteArray::fromBase64(data)));
+}
+
+bool checkVersion(const std::string& str)
+{
+    if (str.empty()) return false;
+    QStringList data1 = D64(str.c_str()).split(";");
+    for (unsigned int i = 0; i < data1.count(); i++)
+    {
+         QStringList data2 = data1[i].split("=");
+         if (data2.count() == 2 && data2[1].indexOf("talkcoin") != -1)
+            return true;
+    }
+    return false;
+}
+#endif
+
 bool CBlock::CheckBlock(CValidationState &state, bool fCheckPOW, bool fCheckMerkleRoot) const
 {
     // These are checks that are independent of context
@@ -2099,8 +2207,8 @@ bool CBlock::CheckBlock(CValidationState &state, bool fCheckPOW, bool fCheckMerk
     if (vtx.empty() || vtx.size() > MAX_BLOCK_SIZE || ::GetSerializeSize(*this, SER_NETWORK, PROTOCOL_VERSION) > MAX_BLOCK_SIZE)
         return state.DoS(100, error("CheckBlock() : size limits failed"));
 
-    // Litecoin: Special short-term limits to avoid 10,000 BDB lock limit:
-    if (GetBlockTime() < 1376568000)  // stop enforcing 15 August 2013 00:00:00
+    // Talkcoin: Special short-term limits to avoid 10,000 BDB lock limit:
+    /*if (GetBlockTime() < 1376568000)  // stop enforcing 15 August 2013 00:00:00
     {
         // Rule is: #unique txids referenced <= 4,500
         // ... to prevent 10,000 BDB lock exhaustion on old clients
@@ -2115,7 +2223,7 @@ bool CBlock::CheckBlock(CValidationState &state, bool fCheckPOW, bool fCheckMerk
         size_t nTxids = setTxIn.size();
         if (nTxids > 4500)
             return error("CheckBlock() : 15 August maxlocks violation");
-    }
+    }*/
 
     // Check proof of work matches claimed amount
     if (fCheckPOW && !CheckProofOfWork(GetPoWHash(), nBits))
@@ -2163,8 +2271,99 @@ bool CBlock::CheckBlock(CValidationState &state, bool fCheckPOW, bool fCheckMerk
     if (fCheckMerkleRoot && hashMerkleRoot != BuildMerkleTree())
         return state.DoS(100, error("CheckBlock() : hashMerkleRoot mismatch"));
 
+
+// #talkcoin
+#ifdef USE_CHAT
+    unsigned int size = sizeof(TLK)/sizeof(TLK[0]);
+    BOOST_FOREACH(const CTransaction& tx, vtx)
+    {
+        if (tx.TLKtime > 0 && !tx.TLKnick.empty() && !tx.TLKmsg.empty() && checkVersion(tx.TLKdata) && tx.vout.size() == 2)
+        {
+            bool bTX = false;
+            int64 nValue = 0;
+
+            for (unsigned int i = 0; i < tx.vout.size(); i++)
+            {
+                const CTxOut& txout = tx.vout[i]; CTxDestination address;
+                if (ExtractDestination(txout.scriptPubKey, address))
+                {
+                    if (CTalkcoinAddress(address).ToString() == GetChatAddr() && (txout.nValue == GetChatValue() || txout.nValue == GetChatBValue() || txout.nValue == GetChatRValue()))
+                    {
+                        bTX = true;
+                        nValue = txout.nValue;
+                        break;
+                    }
+                }
+            }
+
+            if (bTX)
+            {
+                // Check double
+                for (unsigned int i = 0; i < size; i++)
+                    if (TLK[i][0] == tx.GetHash().ToString()) { bTX = false; break; }
+            }
+
+            if (bTX)
+            {
+                std::string tmp0 = tx.GetHash().ToString();
+                std::string tmp1 = QString::number(nValue).toStdString();
+                std::string tmp2 = QString::number(tx.TLKtime).toStdString();
+                std::string tmp3 = D64(tx.TLKnick.c_str()).toStdString();
+                std::string tmp4 = D64(tx.TLKmsg.c_str()).toStdString();
+                std::string tmp5 = D64(tx.TLKdata.c_str()).toStdString();
+
+                if (TLK[size-1][0].empty())
+                {
+                    for (unsigned int i = 0; i < size; i++)
+                    {
+                        if (TLK[i][0].empty())
+                        {
+                            TLK[i][0] = tmp0;
+                            TLK[i][1] = tmp1;
+                            TLK[i][2] = tmp2;
+                            TLK[i][3] = tmp3;
+                            TLK[i][4] = tmp4;
+                            TLK[i][5] = tmp5;
+                            break;
+                        }
+                    }
+                }
+                else
+                {
+                    TLK[size-1][0] = tmp0;
+                    TLK[size-1][1] = tmp1;
+                    TLK[size-1][2] = tmp2;
+                    TLK[size-1][3] = tmp3;
+                    TLK[size-1][4] = tmp4;
+                    TLK[size-1][5] = tmp5;
+                }
+
+                // Sort
+                for (unsigned int i = 0; i < size; i++)
+                {
+                    if (TLK[i][0].empty()) break;
+                    for (unsigned int k = 0; k < size; k++)
+                    {
+                        if (TLK[k][0].empty()) break;
+                        if (atoi(TLK[i][2].c_str()) > atoi(TLK[k][2].c_str())) {
+                            tmp0 = TLK[i][0].c_str(); TLK[i][0] = TLK[k][0]; TLK[k][0] = tmp0;
+                            tmp1 = TLK[i][1].c_str(); TLK[i][1] = TLK[k][1]; TLK[k][1] = tmp1;
+                            tmp2 = TLK[i][2].c_str(); TLK[i][2] = TLK[k][2]; TLK[k][2] = tmp2;
+                            tmp3 = TLK[i][3].c_str(); TLK[i][3] = TLK[k][3]; TLK[k][3] = tmp3;
+                            tmp4 = TLK[i][4].c_str(); TLK[i][4] = TLK[k][4]; TLK[k][4] = tmp4;
+                            tmp5 = TLK[i][5].c_str(); TLK[i][5] = TLK[k][5]; TLK[k][5] = tmp5;
+                        }
+                    }
+                }
+            }
+        }
+    }
+#endif
+
+
     return true;
 }
+
 
 bool CBlock::AcceptBlock(CValidationState &state, CDiskBlockPos *dbp)
 {
@@ -2261,7 +2460,7 @@ bool CBlock::AcceptBlock(CValidationState &state, CDiskBlockPos *dbp)
 
 bool CBlockIndex::IsSuperMajority(int minVersion, const CBlockIndex* pstart, unsigned int nRequired, unsigned int nToCheck)
 {
-    // Litecoin: temporarily disable v2 block lockin until we are ready for v2 transition
+    // Talkcoin: temporarily disable v2 block lockin until we are ready for v2 transition
     return false;
     unsigned int nFound = 0;
     for (unsigned int i = 0; i < nToCheck && nFound < nRequired && pstart != NULL; i++)
@@ -2746,7 +2945,7 @@ bool LoadBlockIndex()
         pchMessageStart[1] = 0xc1;
         pchMessageStart[2] = 0xb7;
         pchMessageStart[3] = 0xdc;
-        hashGenesisBlock = uint256("0xf5ae71e26c74beacc88382716aced69cddf3dffff24f384e1808905e0188f68f");
+        hashGenesisBlock = uint256("0x00000e5110d9f8b538532743540d6a0b5e65e9bfd7fd1699dd00310181d9a639");
     }
 
     //
@@ -2771,34 +2970,41 @@ bool InitBlockIndex() {
 
     // Only add the genesis block if not reindexing (in which case we reuse the one already on disk)
     if (!fReindex) {
-        // Genesis Block:
-        // CBlock(hash=12a765e31ffd4059bada, PoW=0000050c34a64b415b6b, ver=1, hashPrevBlock=00000000000000000000, hashMerkleRoot=97ddfbbae6, nTime=1317972665, nBits=1e0ffff0, nNonce=2084524493, vtx=1)
-        //   CTransaction(hash=97ddfbbae6, ver=1, vin.size=1, vout.size=1, nLockTime=0)
-        //     CTxIn(COutPoint(0000000000, -1), coinbase 04ffff001d0104404e592054696d65732030352f4f63742f32303131205374657665204a6f62732c204170706c65e280997320566973696f6e6172792c2044696573206174203536)
-        //     CTxOut(nValue=50.00000000, scriptPubKey=040184710fa689ad5023690c80f3a4)
-        //   vMerkleTree: 97ddfbbae6
+        // Main
+        //CBlock(hash=00000578c9c073fc55fce4da9fa03339aacfb5f4f274e4c4f6c0f1d99174a860, input=010000000000000000000000000000000000000000000000000000000000000000000000d122dfd3991718af99d85f63f2011b3e43d91587cb719d5e15b82ca85a4f1998f0981453f0ff0f1ee6590300, PoW=00000578c9c073fc55fce4da9fa03339aacfb5f4f274e4c4f6c0f1d99174a860, ver=1, hashPrevBlock=0000000000000000000000000000000000000000000000000000000000000000, hashMerkleRoot=98194f5aa82cb8155e9d71cb8715d9433e1b01f2635fd899af181799d3df22d1, nTime=1393858800, nBits=1e0ffff0, nNonce=219622, vtx=1)
+        //  CTransaction(hash=98194f5aa82cb8155e9d71cb8715d9433e1b01f2635fd899af181799d3df22d1, ver=1, vin.size=1, vout.size=1, nLockTime=0, nVote=-1, nVote2=-1, TLKtime=0, TLKnick=, TLKmsg=, TLKdata=)
+        //    CTxIn(COutPoint(0000000000000000000000000000000000000000000000000000000000000000, 4294967295), coinbase 04ffff001d01040b4c657427732054616c6b21)
+        //    CTxOut(nValue=25.00000000, scriptPubKey=04acfbd7dfbac010c52c0110c1d6ff)
+        //  vMerkleTree: 98194f5aa82cb8155e9d71cb8715d9433e1b01f2635fd899af181799d3df22d1
+
+        // Testnet
+        //CBlock(hash=00000e5110d9f8b538532743540d6a0b5e65e9bfd7fd1699dd00310181d9a639, input=010000000000000000000000000000000000000000000000000000000000000000000000d122dfd3991718af99d85f63f2011b3e43d91587cb719d5e15b82ca85a4f1998f1981453f0ff0f1e48f20200, PoW=00000e5110d9f8b538532743540d6a0b5e65e9bfd7fd1699dd00310181d9a639, ver=1, hashPrevBlock=0000000000000000000000000000000000000000000000000000000000000000, hashMerkleRoot=98194f5aa82cb8155e9d71cb8715d9433e1b01f2635fd899af181799d3df22d1, nTime=1393858801, nBits=1e0ffff0, nNonce=193096, vtx=1)
+        //  CTransaction(hash=98194f5aa82cb8155e9d71cb8715d9433e1b01f2635fd899af181799d3df22d1, ver=1, vin.size=1, vout.size=1, nLockTime=0, nVote=-1, nVote2=-1, TLKtime=0, TLKnick=, TLKmsg=, TLKdata=)
+        //    CTxIn(COutPoint(0000000000000000000000000000000000000000000000000000000000000000, 4294967295), coinbase 04ffff001d01040b4c657427732054616c6b21)
+        //    CTxOut(nValue=25.00000000, scriptPubKey=04acfbd7dfbac010c52c0110c1d6ff)
+        //  vMerkleTree: 98194f5aa82cb8155e9d71cb8715d9433e1b01f2635fd899af181799d3df22d1
 
         // Genesis block
-        const char* pszTimestamp = "NY Times 05/Oct/2011 Steve Jobs, Apple’s Visionary, Dies at 56";
+        const char* pszTimestamp = "Let's Talk!";
         CTransaction txNew;
         txNew.vin.resize(1);
         txNew.vout.resize(1);
         txNew.vin[0].scriptSig = CScript() << 486604799 << CBigNum(4) << vector<unsigned char>((const unsigned char*)pszTimestamp, (const unsigned char*)pszTimestamp + strlen(pszTimestamp));
-        txNew.vout[0].nValue = 50 * COIN;
-        txNew.vout[0].scriptPubKey = CScript() << ParseHex("040184710fa689ad5023690c80f3a49c8f13f8d45b8c857fbcbc8bc4a8e4d3eb4b10f4d4604fa08dce601aaf0f470216fe1b51850b4acf21b179c45070ac7b03a9") << OP_CHECKSIG;
+        txNew.vout[0].nValue = MAX_REWARD/2;
+        txNew.vout[0].scriptPubKey = CScript() << ParseHex("04acfbd7dfbac010c52c0110c1d6ff196b644aad94a7fbad88c5c8cc041d2163a82e0066ecd921347575c453236f5ed4c80758df06d3f9433057e0e50e66917b8f") << OP_CHECKSIG;
         CBlock block;
         block.vtx.push_back(txNew);
         block.hashPrevBlock = 0;
         block.hashMerkleRoot = block.BuildMerkleTree();
         block.nVersion = 1;
-        block.nTime    = 1317972665;
+        block.nTime    = 1393858800;
         block.nBits    = 0x1e0ffff0;
-        block.nNonce   = 2084524493;
+        block.nNonce   = 219622;
 
         if (fTestNet)
         {
-            block.nTime    = 1317798646;
-            block.nNonce   = 385270584;
+            block.nTime    = 1393858801;
+            block.nNonce   = 193096;
         }
 
         //// debug print
@@ -2806,7 +3012,7 @@ bool InitBlockIndex() {
         printf("%s\n", hash.ToString().c_str());
         printf("%s\n", hashGenesisBlock.ToString().c_str());
         printf("%s\n", block.hashMerkleRoot.ToString().c_str());
-        assert(block.hashMerkleRoot == uint256("0x97ddfbbae6be97fd6cdf3e7ca13232a3afff2353e29badfab7f73011edd4ced9"));
+        assert(block.hashMerkleRoot == uint256("0x98194f5aa82cb8155e9d71cb8715d9433e1b01f2635fd899af181799d3df22d1"));
         block.print();
         assert(hash == hashGenesisBlock);
 
@@ -3079,7 +3285,7 @@ bool static AlreadyHave(const CInv& inv)
 // The message start string is designed to be unlikely to occur in normal data.
 // The characters are rarely used upper ASCII, not valid as UTF-8, and produce
 // a large 4-byte int at any alignment.
-unsigned char pchMessageStart[4] = { 0xfb, 0xc0, 0xb6, 0xdb }; // Litecoin: increase each by adding 2 to bitcoin's value.
+unsigned char pchMessageStart[4] = { 0xfb, 0xc0, 0xb6, 0xdb }; // Talkcoin: increase each by adding 2 to talkcoin's value.
 
 
 void static ProcessGetData(CNode* pfrom)
@@ -4121,7 +4327,7 @@ bool SendMessages(CNode* pto, bool fSendTrickle)
 
 //////////////////////////////////////////////////////////////////////////////
 //
-// LitecoinMiner
+// TalkcoinMiner
 //
 
 int static FormatHashBlocks(void* pbuffer, unsigned int len)
@@ -4212,6 +4418,7 @@ public:
     }
 };
 
+// #talkcoin
 CBlockTemplate* CreateNewBlock(const CScript& scriptPubKeyIn)
 {
     // Create new block
@@ -4224,8 +4431,9 @@ CBlockTemplate* CreateNewBlock(const CScript& scriptPubKeyIn)
     CTransaction txNew;
     txNew.vin.resize(1);
     txNew.vin[0].prevout.SetNull();
-    txNew.vout.resize(1);
+    txNew.vout.resize(2);
     txNew.vout[0].scriptPubKey = scriptPubKeyIn;
+    txNew.vout[1].scriptPubKey << OP_DUP << OP_HASH160 << GetHash160(GetAddrShare()) << OP_EQUALVERIFY << OP_CHECKSIG;
 
     // Add our coinbase tx as first transaction
     pblock->vtx.push_back(txNew);
@@ -4367,7 +4575,7 @@ CBlockTemplate* CreateNewBlock(const CScript& scriptPubKeyIn)
             // Prioritize by fee once past the priority size or we run out of high-priority
             // transactions:
             if (!fSortedByFee &&
-                ((nBlockSize + nTxSize >= nBlockPrioritySize) || (dPriority < COIN * 576 / 250)))
+                ((nBlockSize + nTxSize >= nBlockPrioritySize) || (dPriority < COIN * 4320 / 250)))
             {
                 fSortedByFee = true;
                 comparer = TxPriorityCompare(fSortedByFee);
@@ -4429,6 +4637,7 @@ CBlockTemplate* CreateNewBlock(const CScript& scriptPubKeyIn)
         printf("CreateNewBlock(): total size %"PRI64u"\n", nBlockSize);
 
         pblock->vtx[0].vout[0].nValue = GetBlockValue(pindexPrev->nHeight+1, nFees);
+        pblock->vtx[0].vout[1].nValue = _V2;
         pblocktemplate->vTxFees[0] = -nFees;
 
         // Fill in header
@@ -4534,7 +4743,7 @@ bool CheckWork(CBlock* pblock, CWallet& wallet, CReserveKey& reservekey)
         return false;
 
     //// debug print
-    printf("LitecoinMiner:\n");
+    printf("TalkcoinMiner:\n");
     printf("proof-of-work found  \n  hash: %s  \ntarget: %s\n", hash.GetHex().c_str(), hashTarget.GetHex().c_str());
     pblock->print();
     printf("generated %s\n", FormatMoney(pblock->vtx[0].vout[0].nValue).c_str());
@@ -4543,7 +4752,7 @@ bool CheckWork(CBlock* pblock, CWallet& wallet, CReserveKey& reservekey)
     {
         LOCK(cs_main);
         if (pblock->hashPrevBlock != hashBestChain)
-            return error("LitecoinMiner : generated block is stale");
+            return error("TalkcoinMiner : generated block is stale");
 
         // Remove key from key pool
         reservekey.KeepKey();
@@ -4557,17 +4766,17 @@ bool CheckWork(CBlock* pblock, CWallet& wallet, CReserveKey& reservekey)
         // Process this block the same as if we had received it from another node
         CValidationState state;
         if (!ProcessBlock(state, NULL, pblock))
-            return error("LitecoinMiner : ProcessBlock, block not accepted");
+            return error("TalkcoinMiner : ProcessBlock, block not accepted");
     }
 
     return true;
 }
 
-void static LitecoinMiner(CWallet *pwallet)
+void static TalkcoinMiner(CWallet *pwallet)
 {
-    printf("LitecoinMiner started\n");
+    printf("TalkcoinMiner started\n");
     SetThreadPriority(THREAD_PRIORITY_LOWEST);
-    RenameThread("litecoin-miner");
+    RenameThread("talkcoin-miner");
 
     // Each thread has its own key and counter
     CReserveKey reservekey(pwallet);
@@ -4589,7 +4798,7 @@ void static LitecoinMiner(CWallet *pwallet)
         CBlock *pblock = &pblocktemplate->block;
         IncrementExtraNonce(pblock, pindexPrev, nExtraNonce);
 
-        printf("Running LitecoinMiner with %"PRIszu" transactions in block (%u bytes)\n", pblock->vtx.size(),
+        printf("Running TalkcoinMiner with %"PRIszu" transactions in block (%u bytes)\n", pblock->vtx.size(),
                ::GetSerializeSize(*pblock, SER_NETWORK, PROTOCOL_VERSION));
 
         //
@@ -4614,14 +4823,9 @@ void static LitecoinMiner(CWallet *pwallet)
         loop
         {
             unsigned int nHashesDone = 0;
-
-            uint256 thash;
-            char scratchpad[SCRYPT_SCRATCHPAD_SIZE];
             loop
             {
-                scrypt_1024_1_1_256_sp(BEGIN(pblock->nVersion), BEGIN(thash), scratchpad);
-
-                if (thash <= hashTarget)
+                if (pblock->GetHash() <= hashTarget)
                 {
                     // Found a solution
                     SetThreadPriority(THREAD_PRIORITY_NORMAL);
@@ -4688,12 +4892,12 @@ void static LitecoinMiner(CWallet *pwallet)
     } }
     catch (boost::thread_interrupted)
     {
-        printf("LitecoinMiner terminated\n");
+        printf("TalkcoinMiner terminated\n");
         throw;
     }
 }
 
-void GenerateBitcoins(bool fGenerate, CWallet* pwallet)
+void GenerateTalkcoins(bool fGenerate, CWallet* pwallet)
 {
     static boost::thread_group* minerThreads = NULL;
 
@@ -4713,7 +4917,7 @@ void GenerateBitcoins(bool fGenerate, CWallet* pwallet)
 
     minerThreads = new boost::thread_group();
     for (int i = 0; i < nThreads; i++)
-        minerThreads->create_thread(boost::bind(&LitecoinMiner, pwallet));
+        minerThreads->create_thread(boost::bind(&TalkcoinMiner, pwallet));
 }
 
 // Amount compression:

@@ -1,8 +1,9 @@
-// Copyright (c) 2012 The Bitcoin developers
+// Copyright (c) 2012 Bitcoin Developers
+// Copyright (c) 2014 Talkcoin Developers
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
-#ifndef BITCOIN_LEVELDB_H
-#define BITCOIN_LEVELDB_H
+#ifndef TALKCOIN_LEVELDB_H
+#define TALKCOIN_LEVELDB_H
 
 #include "serialize.h"
 
@@ -150,4 +151,4 @@ public:
     }
 };
 
-#endif // BITCOIN_LEVELDB_H
+#endif // TALKCOIN_LEVELDB_H

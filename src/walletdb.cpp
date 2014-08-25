@@ -1,5 +1,6 @@
 // Copyright (c) 2009-2010 Satoshi Nakamoto
-// Copyright (c) 2009-2012 The Bitcoin developers
+// Copyright (c) 2009-2012 Bitcoin Developers
+// Copyright (c) 2014 Talkcoin Developers
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -196,19 +197,22 @@ ReadKeyValue(CWallet* pwallet, CDataStream& ssKey, CDataStream& ssValue,
         {
             string strAddress;
             ssKey >> strAddress;
-            ssValue >> pwallet->mapAddressBook[CBitcoinAddress(strAddress).Get()];
+            ssValue >> pwallet->mapAddressBook[CTalkcoinAddress(strAddress).Get()];
         }
         else if (strType == "tx")
         {
             uint256 hash;
             ssKey >> hash;
-            CWalletTx wtx;
+            CWalletTx& wtx = pwallet->mapWallet[hash];
             ssValue >> wtx;
             CValidationState state;
             if (wtx.CheckTransaction(state) && (wtx.GetHash() == hash) && state.IsValid())
                 wtx.BindWallet(pwallet);
             else
+            {
+                pwallet->mapWallet.erase(hash);
                 return false;
+            }
 
             // Undo serialize changes in 31600
             if (31404 <= wtx.fTimeReceivedIsTxTime && wtx.fTimeReceivedIsTxTime <= 31703)
@@ -233,7 +237,6 @@ ReadKeyValue(CWallet* pwallet, CDataStream& ssKey, CDataStream& ssValue,
             if (wtx.nOrderPos == -1)
                 fAnyUnordered = true;
 
-            pwallet->mapWallet[hash] = wtx;
             //// debug print
             //printf("LoadWallet  %s\n", wtx.GetHash().ToString().c_str());
             //printf(" %12"PRI64d"  %s  %s  %s\n",
@@ -467,7 +470,7 @@ DBErrors CWalletDB::LoadWallet(CWallet* pwallet)
 void ThreadFlushWalletDB(const string& strFile)
 {
     // Make this thread recognisable as the wallet flushing thread
-    RenameThread("bitcoin-wallet");
+    RenameThread("talkcoin-wallet");
 
     static bool fOneThread;
     if (fOneThread)

@@ -1,9 +1,10 @@
 // Copyright (c) 2009-2010 Satoshi Nakamoto
-// Copyright (c) 2009-2012 The Bitcoin developers
+// Copyright (c) 2009-2012 Bitcoin Developers
+// Copyright (c) 2014 Talkcoin Developers
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
-#ifndef H_BITCOIN_SCRIPT
-#define H_BITCOIN_SCRIPT
+#ifndef H_TALKCOIN_SCRIPT
+#define H_TALKCOIN_SCRIPT
 
 #include <string>
 #include <vector>
@@ -57,7 +58,7 @@ public:
  *  * CNoDestination: no destination set
  *  * CKeyID: TX_PUBKEYHASH destination
  *  * CScriptID: TX_SCRIPTHASH destination
- *  A CTxDestination is the internal data type encoded in a CBitcoinAddress
+ *  A CTxDestination is the internal data type encoded in a CTalkcoinAddress
  */
 typedef boost::variant<CNoDestination, CKeyID, CScriptID> CTxDestination;
 
@@ -520,7 +521,7 @@ public:
         return nFound;
     }
 
-    // Pre-version-0.6, Bitcoin always counted CHECKMULTISIGs
+    // Pre-version-0.6, Talkcoin always counted CHECKMULTISIGs
     // as 20 sigops. With pay-to-script-hash, that changed:
     // CHECKMULTISIGs serialized in scriptSigs are
     // counted more accurately, assuming they are of the form
@@ -533,7 +534,7 @@ public:
 
     bool IsPayToScriptHash() const;
 
-    // Called by CTransaction::IsStandard and P2SH VerifyScript (which makes it consensus-critical).
+    // Called by CTransaction::IsStandard
     bool IsPushOnly() const
     {
         const_iterator pc = begin();
@@ -548,8 +549,6 @@ public:
         return true;
     }
 
-    // Called by IsStandardTx.
-    bool HasCanonicalPushes() const;
 
     void SetDestination(const CTxDestination& address);
     void SetMultisig(int nRequired, const std::vector<CPubKey>& keys);
@@ -670,7 +669,6 @@ public:
 bool IsCanonicalPubKey(const std::vector<unsigned char> &vchPubKey);
 bool IsCanonicalSignature(const std::vector<unsigned char> &vchSig);
 
-uint256 SignatureHash(CScript scriptCode, const CTransaction& txTo, unsigned int nIn, int nHashType);
 bool EvalScript(std::vector<std::vector<unsigned char> >& stack, const CScript& script, const CTransaction& txTo, unsigned int nIn, unsigned int flags, int nHashType);
 bool Solver(const CScript& scriptPubKey, txnouttype& typeRet, std::vector<std::vector<unsigned char> >& vSolutionsRet);
 int ScriptSigArgsExpected(txnouttype t, const std::vector<std::vector<unsigned char> >& vSolutions);

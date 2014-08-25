@@ -1,7 +1,3 @@
-// Copyright (c) 2011-2013 The Bitcoin developers
-// Distributed under the MIT/X11 software license, see the accompanying
-// file COPYING or http://www.opensource.org/licenses/mit-license.php.
-
 #ifndef CLIENTMODEL_H
 #define CLIENTMODEL_H
 
@@ -24,7 +20,7 @@ enum BlockSource {
     BLOCK_SOURCE_NETWORK
 };
 
-/** Model for Bitcoin network client. */
+/** Model for Talkcoin network client. */
 class ClientModel : public QObject
 {
     Q_OBJECT

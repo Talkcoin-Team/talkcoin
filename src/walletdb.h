@@ -1,9 +1,10 @@
 // Copyright (c) 2009-2010 Satoshi Nakamoto
-// Copyright (c) 2009-2012 The Bitcoin developers
+// Copyright (c) 2009-2012 Bitcoin Developers
+// Copyright (c) 2014 Talkcoin Developers
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
-#ifndef BITCOIN_WALLETDB_H
-#define BITCOIN_WALLETDB_H
+#ifndef TALKCOIN_WALLETDB_H
+#define TALKCOIN_WALLETDB_H
 
 #include "db.h"
 #include "base58.h"
@@ -160,4 +161,4 @@ public:
     static bool Recover(CDBEnv& dbenv, std::string filename);
 };
 
-#endif // BITCOIN_WALLETDB_H
+#endif // TALKCOIN_WALLETDB_H

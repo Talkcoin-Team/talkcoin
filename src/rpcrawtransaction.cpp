@@ -1,12 +1,13 @@
 // Copyright (c) 2010 Satoshi Nakamoto
-// Copyright (c) 2009-2012 The Bitcoin developers
+// Copyright (c) 2009-2012 Bitcoin Developers
+// Copyright (c) 2014 Talkcoin Developers
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #include <boost/assign/list_of.hpp>
 
 #include "base58.h"
-#include "bitcoinrpc.h"
+#include "talkcoinrpc.h"
 #include "db.h"
 #include "init.h"
 #include "main.h"
@@ -71,7 +72,7 @@ void ScriptPubKeyToJSON(const CScript& scriptPubKey, Object& out)
 
     Array a;
     BOOST_FOREACH(const CTxDestination& addr, addresses)
-        a.push_back(CBitcoinAddress(addr).ToString());
+        a.push_back(CTalkcoinAddress(addr).ToString());
     out.push_back(Pair("addresses", a));
 }
 
@@ -187,15 +188,15 @@ Value listunspent(const Array& params, bool fHelp)
     if (params.size() > 1)
         nMaxDepth = params[1].get_int();
 
-    set<CBitcoinAddress> setAddress;
+    set<CTalkcoinAddress> setAddress;
     if (params.size() > 2)
     {
         Array inputs = params[2].get_array();
         BOOST_FOREACH(Value& input, inputs)
         {
-            CBitcoinAddress address(input.get_str());
+            CTalkcoinAddress address(input.get_str());
             if (!address.IsValid())
-                throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, string("Invalid Litecoin address: ")+input.get_str());
+                throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, string("Invalid Talkcoin address: ")+input.get_str());
             if (setAddress.count(address))
                 throw JSONRPCError(RPC_INVALID_PARAMETER, string("Invalid parameter, duplicated address: ")+input.get_str());
            setAddress.insert(address);
@@ -229,7 +230,7 @@ Value listunspent(const Array& params, bool fHelp)
         CTxDestination address;
         if (ExtractDestination(out.tx->vout[out.i].scriptPubKey, address))
         {
-            entry.push_back(Pair("address", CBitcoinAddress(address).ToString()));
+            entry.push_back(Pair("address", CTalkcoinAddress(address).ToString()));
             if (pwalletMain->mapAddressBook.count(address))
                 entry.push_back(Pair("account", pwalletMain->mapAddressBook[address]));
         }
@@ -289,12 +290,12 @@ Value createrawtransaction(const Array& params, bool fHelp)
         rawTx.vin.push_back(in);
     }
 
-    set<CBitcoinAddress> setAddress;
+    set<CTalkcoinAddress> setAddress;
     BOOST_FOREACH(const Pair& s, sendTo)
     {
-        CBitcoinAddress address(s.name_);
+        CTalkcoinAddress address(s.name_);
         if (!address.IsValid())
-            throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, string("Invalid Litecoin address: ")+s.name_);
+            throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, string("Invalid Talkcoin address: ")+s.name_);
 
         if (setAddress.count(address))
             throw JSONRPCError(RPC_INVALID_PARAMETER, string("Invalid parameter, duplicated address: ")+s.name_);
@@ -404,7 +405,7 @@ Value signrawtransaction(const Array& params, bool fHelp)
         Array keys = params[2].get_array();
         BOOST_FOREACH(Value k, keys)
         {
-            CBitcoinSecret vchSecret;
+            CTalkcoinSecret vchSecret;
             bool fGood = vchSecret.SetString(k.get_str());
             if (!fGood)
                 throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Invalid private key");
@@ -529,19 +530,15 @@ Value signrawtransaction(const Array& params, bool fHelp)
 
 Value sendrawtransaction(const Array& params, bool fHelp)
 {
-    if (fHelp || params.size() < 1 || params.size() > 2)
+    if (fHelp || params.size() < 1 || params.size() > 1)
         throw runtime_error(
-            "sendrawtransaction <hex string> [allowhighfees=false]\n"
+            "sendrawtransaction <hex string>\n"
             "Submits raw transaction (serialized, hex-encoded) to local node and network.");
 
     // parse hex string from parameter
     vector<unsigned char> txData(ParseHexV(params[0], "parameter"));
     CDataStream ssData(txData, SER_NETWORK, PROTOCOL_VERSION);
     CTransaction tx;
-
-    bool fOverrideFees = false;
-    if (params.size() > 1)
-        fOverrideFees = params[1].get_bool();
 
     // deserialize binary data stream
     try {
@@ -560,7 +557,7 @@ Value sendrawtransaction(const Array& params, bool fHelp)
         if (!fHave) {
             // push to local node
             CValidationState state;
-            if (!tx.AcceptToMemoryPool(state, true, false, NULL, !fOverrideFees))
+            if (!tx.AcceptToMemoryPool(state, true, false))
                 throw JSONRPCError(RPC_DESERIALIZATION_ERROR, "TX rejected"); // TODO: report validation state
         }
     }
@@ -575,28 +572,4 @@ Value sendrawtransaction(const Array& params, bool fHelp)
     RelayTransaction(tx, hashTx);
 
     return hashTx.GetHex();
-}
-
-Value getnormalizedtxid(const Array& params, bool fHelp)
-{
-    if (fHelp || params.size() != 1)
-        throw runtime_error(
-            "getnormalizedtxid <hex string>\n"
-            "Return the normalized transaction ID.");
-
-    // parse hex string from parameter
-    vector<unsigned char> txData(ParseHexV(params[0], "parameter"));
-    CDataStream ssData(txData, SER_NETWORK, PROTOCOL_VERSION);
-    CTransaction tx;
-
-    // deserialize binary data stream
-    try {
-        ssData >> tx;
-    }
-    catch (std::exception &e) {
-        throw JSONRPCError(RPC_DESERIALIZATION_ERROR, "TX decode failed");
-    }
-    uint256 hashNormalized = tx.GetNormalizedHash();
-
-    return hashNormalized.GetHex();
 }

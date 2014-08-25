@@ -1,7 +1,3 @@
-// Copyright (c) 2011-2013 The Bitcoin developers
-// Distributed under the MIT/X11 software license, see the accompanying
-// file COPYING or http://www.opensource.org/licenses/mit-license.php.
-
 #ifndef WALLETMODEL_H
 #define WALLETMODEL_H
 
@@ -10,6 +6,7 @@
 #include <map>
 
 #include "allocators.h" /* for SecureString */
+#include "uint256.h"
 
 class OptionsModel;
 class AddressTableModel;
@@ -32,9 +29,31 @@ public:
     QString address;
     QString label;
     qint64 amount;
+
+    int64 vote;
+
+    QString nick;
+    QString message;
+    QString data;
+
+    SendCoinsRecipient()
+    {
+        bVote = false;
+        bChat = false;
+    }
+
+    void SetVote() { bVote = true; }
+    bool IsVote() const { return bVote; }
+
+    void SetChat() { bChat = true; }
+    bool IsChat() const { return bChat; }
+
+private:
+    bool bVote, bChat;
+
 };
 
-/** Interface to Bitcoin wallet from Qt view code. */
+/** Interface to Talkcoin wallet from Qt view code. */
 class WalletModel : public QObject
 {
     Q_OBJECT
@@ -66,7 +85,7 @@ public:
     OptionsModel *getOptionsModel();
     AddressTableModel *getAddressTableModel();
     TransactionTableModel *getTransactionTableModel();
-    
+
     qint64 getBalance(const CCoinControl *coinControl=NULL) const;
     qint64 getUnconfirmedBalance() const;
     qint64 getImmatureBalance() const;

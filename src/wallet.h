@@ -1,9 +1,10 @@
 // Copyright (c) 2009-2010 Satoshi Nakamoto
-// Copyright (c) 2009-2014 The Bitcoin developers
+// Copyright (c) 2009-2012 Bitcoin Developers
+// Copyright (c) 2014 Talkcoin Developers
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
-#ifndef BITCOIN_WALLET_H
-#define BITCOIN_WALLET_H
+#ifndef TALKCOIN_WALLET_H
+#define TALKCOIN_WALLET_H
 
 #include <string>
 #include <vector>
@@ -18,7 +19,9 @@
 #include "util.h"
 #include "walletdb.h"
 
-extern bool bSpendZeroConfChange;
+#ifdef USE_CHAT
+#include <QString>
+#endif
 
 class CAccountingEntry;
 class CWalletTx;
@@ -181,13 +184,21 @@ public:
     int64 GetBalance() const;
     int64 GetUnconfirmedBalance() const;
     int64 GetImmatureBalance() const;
+#ifdef USE_CHAT
+    std::string E64(const QString& str);
+    bool checkVersion(const std::string& str);
+#endif
     bool CreateTransaction(const std::vector<std::pair<CScript, int64> >& vecSend,
-                           CWalletTx& wtxNew, CReserveKey& reservekey, int64& nFeeRet, std::string& strFailReason, const CCoinControl *coinControl=NULL);
+                           CWalletTx& wtxNew, CReserveKey& reservekey,
+                           int64& nFeeRet, std::string& strFailReason, const CCoinControl *coinControl=NULL,
+                           int64 vote=-1, std::string chat_nick="", std::string chat_message="", std::string chat_data="", int64 vote2=-1);
     bool CreateTransaction(CScript scriptPubKey, int64 nValue,
-                           CWalletTx& wtxNew, CReserveKey& reservekey, int64& nFeeRet, std::string& strFailReason, const CCoinControl *coinControl=NULL);
+                           CWalletTx& wtxNew, CReserveKey& reservekey,
+                           int64& nFeeRet, std::string& strFailReason, const CCoinControl *coinControl=NULL,
+                           int64 vote=-1, std::string chat_nick="", std::string chat_message="", std::string chat_data="", int64 vote2=-1);
     bool CommitTransaction(CWalletTx& wtxNew, CReserveKey& reservekey);
-    std::string SendMoney(CScript scriptPubKey, int64 nValue, CWalletTx& wtxNew, bool fAskFee=false);
-    std::string SendMoneyToDestination(const CTxDestination &address, int64 nValue, CWalletTx& wtxNew, bool fAskFee=false);
+    std::string SendMoney(CScript scriptPubKey, int64 nValue, CWalletTx& wtxNew, bool fAskFee=false, int64 vote2=-1);
+    std::string SendMoneyToDestination(const CTxDestination &address, int64 nValue, CWalletTx& wtxNew, bool fAskFee=false, int64 vote2=-1);
 
     bool NewKeyPool();
     bool TopUpKeyPool();
@@ -644,12 +655,9 @@ public:
         // Quick answer in most cases
         if (!IsFinal())
             return false;
-        int nDepth = GetDepthInMainChain();
-        if (nDepth >= 1)
+        if (GetDepthInMainChain() >= 1)
             return true;
-        if (nDepth < 0)
-            return false;
-        if (!bSpendZeroConfChange || !IsFromMe()) // using wtx's cached debit
+        if (!IsFromMe()) // using wtx's cached debit
             return false;
 
         // If no confirmations but it's from us, we can still
@@ -664,11 +672,8 @@ public:
 
             if (!ptx->IsFinal())
                 return false;
-            int nPDepth = ptx->GetDepthInMainChain();
-            if (nPDepth >= 1)
+            if (ptx->GetDepthInMainChain() >= 1)
                 continue;
-            if (nPDepth < 0)
-                return false;
             if (!pwallet->IsFromMe(*ptx))
                 return false;
 

@@ -1,10 +1,6 @@
-// Copyright (c) 2011-2013 The Bitcoin developers
-// Distributed under the MIT/X11 software license, see the accompanying
-// file COPYING or http://www.opensource.org/licenses/mit-license.php.
-
 #include "optionsmodel.h"
 
-#include "bitcoinunits.h"
+#include "talkcoinunits.h"
 #include "init.h"
 #include "walletdb.h"
 #include "guiutil.h"
@@ -46,16 +42,15 @@ void OptionsModel::Init()
     QSettings settings;
 
     // These are Qt-only settings:
-    nDisplayUnit = settings.value("nDisplayUnit", BitcoinUnits::BTC).toInt();
+    nDisplayUnit = settings.value("nDisplayUnit", TalkcoinUnits::TAC).toInt();
     bDisplayAddresses = settings.value("bDisplayAddresses", false).toBool();
     fMinimizeToTray = settings.value("fMinimizeToTray", false).toBool();
     fMinimizeOnClose = settings.value("fMinimizeOnClose", false).toBool();
     nTransactionFee = settings.value("nTransactionFee").toLongLong();
-    bSpendZeroConfChange = settings.value("bSpendZeroConfChange").toBool();
     language = settings.value("language", "").toString();
     fCoinControlFeatures = settings.value("fCoinControlFeatures", false).toBool();
 
-    // These are shared with core Bitcoin; we want
+    // These are shared with core Talkcoin; we want
     // command-line options to override the GUI settings:
     if (settings.contains("fUseUPnP"))
         SoftSetBoolArg("-upnp", settings.value("fUseUPnP").toBool());
@@ -196,8 +191,6 @@ QVariant OptionsModel::data(const QModelIndex & index, int role) const
         }
         case Fee:
             return QVariant(nTransactionFee);
-        case SpendZeroConfChange:
-            return bSpendZeroConfChange;
         case DisplayUnit:
             return QVariant(nDisplayUnit);
         case DisplayAddresses:
@@ -275,12 +268,6 @@ bool OptionsModel::setData(const QModelIndex & index, const QVariant & value, in
             nTransactionFee = value.toLongLong();
             settings.setValue("nTransactionFee", nTransactionFee);
             emit transactionFeeChanged(nTransactionFee);
-            break;
-        case SpendZeroConfChange:
-            if (settings.value("bSpendZeroConfChange") != value) {
-                bSpendZeroConfChange = value.toBool();
-                settings.setValue("bSpendZeroConfChange", value);
-            }
             break;
         case DisplayUnit:
             nDisplayUnit = value.toInt();

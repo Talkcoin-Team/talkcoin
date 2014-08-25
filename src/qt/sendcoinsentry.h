@@ -1,7 +1,3 @@
-// Copyright (c) 2011-2013 The Bitcoin developers
-// Distributed under the MIT/X11 software license, see the accompanying
-// file COPYING or http://www.opensource.org/licenses/mit-license.php.
-
 #ifndef SENDCOINSENTRY_H
 #define SENDCOINSENTRY_H
 
@@ -13,7 +9,7 @@ namespace Ui {
 class WalletModel;
 class SendCoinsRecipient;
 
-/** A single entry in the dialog for sending bitcoins. */
+/** A single entry in the dialog for sending talkcoins. */
 class SendCoinsEntry : public QFrame
 {
     Q_OBJECT

@@ -1,13 +1,16 @@
-// Copyright (c) 2011-2013 The Bitcoin developers
-// Distributed under the MIT/X11 software license, see the accompanying
-// file COPYING or http://www.opensource.org/licenses/mit-license.php.
-
+/*
+ * Qt4 talkcoin GUI.
+ *
+ * W.J. van der Laan 2011-2012
+ * Bitcoin Developers 2011-2013
+ * Talkcoin Developers 2014
+ */
 #ifndef WALLETFRAME_H
 #define WALLETFRAME_H
 
 #include <QFrame>
 
-class BitcoinGUI;
+class TalkcoinGUI;
 class ClientModel;
 class WalletModel;
 class WalletStack;
@@ -18,7 +21,7 @@ class WalletFrame : public QFrame
     Q_OBJECT
 
 public:
-    explicit WalletFrame(BitcoinGUI *_gui = 0);
+    explicit WalletFrame(TalkcoinGUI *_gui = 0);
     ~WalletFrame();
 
     void setClientModel(ClientModel *clientModel);
@@ -33,7 +36,7 @@ public:
     void showOutOfSyncWarning(bool fShow);
 
 private:
-    BitcoinGUI *gui;
+    TalkcoinGUI *gui;
     ClientModel *clientModel;
     WalletStack *walletStack;
 

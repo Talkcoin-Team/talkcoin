@@ -1,13 +1,16 @@
-// Copyright (c) 2011-2013 The Bitcoin developers
-// Distributed under the MIT/X11 software license, see the accompanying
-// file COPYING or http://www.opensource.org/licenses/mit-license.php.
-
+/*
+ * Qt4 talkcoin GUI.
+ *
+ * W.J. van der Laan 2011-2012
+ * Bitcoin Developers 2011-2013
+ * Talkcoin Developers 2014
+ */
 #ifndef WALLETVIEW_H
 #define WALLETVIEW_H
 
 #include <QStackedWidget>
 
-class BitcoinGUI;
+class TalkcoinGUI;
 class ClientModel;
 class WalletModel;
 class TransactionView;
@@ -33,16 +36,16 @@ class WalletView : public QStackedWidget
     Q_OBJECT
 
 public:
-    explicit WalletView(QWidget *parent, BitcoinGUI *_gui);
+    explicit WalletView(QWidget *parent, TalkcoinGUI *_gui);
     ~WalletView();
 
-    void setBitcoinGUI(BitcoinGUI *gui);
+    void setTalkcoinGUI(TalkcoinGUI *gui);
     /** Set the client model.
         The client model represents the part of the core that communicates with the P2P network, and is wallet-agnostic.
     */
     void setClientModel(ClientModel *clientModel);
     /** Set the wallet model.
-        The wallet model represents a bitcoin wallet, and offers access to the list of transactions, address book and sending
+        The wallet model represents a talkcoin wallet, and offers access to the list of transactions, address book and sending
         functionality.
     */
     void setWalletModel(WalletModel *walletModel);
@@ -52,7 +55,7 @@ public:
     void showOutOfSyncWarning(bool fShow);
 
 private:
-    BitcoinGUI *gui;
+    TalkcoinGUI *gui;
     ClientModel *clientModel;
     WalletModel *walletModel;
 

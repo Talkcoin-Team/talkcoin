@@ -1,8 +1,9 @@
-// Copyright (c) 2012 The Bitcoin developers
+// Copyright (c) 2012 Bitcoin Developers
+// Copyright (c) 2014 Talkcoin Developers
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
-#ifndef BITCOIN_LIMITEDMAP_H
-#define BITCOIN_LIMITEDMAP_H
+#ifndef TALKCOIN_LIMITEDMAP_H
+#define TALKCOIN_LIMITEDMAP_H
 
 #include <map>
 #include <deque>

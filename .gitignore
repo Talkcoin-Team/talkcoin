@@ -1,7 +1,7 @@
 src/*.exe
-src/litecoin
-src/litecoind
-src/test_litecoin
+src/talkcoin
+src/talkcoind
+src/test_talkcoin
 .*.swp
 *.*~*
 *.bak
@@ -9,17 +9,17 @@ src/test_litecoin
 *.orig
 *.o
 *.patch
-.litecoin
+.talkcoin
 
 # Compilation and Qt preprocessor part
 *.qm
 Makefile
-litecoin-qt
-Litecoin-Qt.app
+talkcoin-qt
+Talkcoin-Qt.app
 
 # Unit-tests
 Makefile.test
-litecoin-qt_test
+talkcoin-qt_test
 
 # Resources cpp
 qrc_*.cpp
