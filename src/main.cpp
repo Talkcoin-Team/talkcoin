@@ -1197,8 +1197,16 @@ int64 static GetVoteValue(int nHeight)
 
 int64 static GetBlockValue(int nHeight, int64 nFees)
 {
-    nSubsidy = GetVoteValue(nHeight);
-    //printf("nHeight=%d -> nSubsidy=%"PRI64d"\n", nHeight, nSubsidy);
+    if ((!fTestNet && (nHeight < nHardFork)) || (fTestNet && (nHeight < nTestnetFork))) {
+        nSubsidy = GetVoteValue(nHeight);
+    } else {
+        nSubsidy = 15 * COIN;
+        if (nHeight >= 1500000) {
+            nSubsidy = 8 * COIN;
+            nSubsidy >>= (nHeight - 1500000) / 1500000;
+        }
+    }
+
     return nSubsidy + nFees;
 }
 
