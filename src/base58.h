@@ -39,7 +39,7 @@ std::string GET_A_GENESIS() {
         if (height < nHardFork) {
             return "VHBtZnVHcmp2Z240M0dvUjhNUlYzVUtmUEVaQnJzQlZHTg==";
         } else {
-            return "";
+            return "VG9aTHc5REdHdzJlNlVTYXpYUU5ZMjVZcGRpVUR3TU5wTQ==";
         }
     }
 }
