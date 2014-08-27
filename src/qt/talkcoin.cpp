@@ -129,6 +129,12 @@ int main(int argc, char *argv[])
     Q_INIT_RESOURCE(talkcoin);
     QApplication app(argc, argv);
 
+    /* Allows to start up with testnet by default */
+    if(fTestNetInit) {
+       fTestNet = true;
+       SoftSetBoolArg("-testnet", true);
+    }
+
     // Register meta types used for QMetaObject::invokeMethod
     qRegisterMetaType< bool* >();
 
