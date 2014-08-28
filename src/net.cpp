@@ -1193,12 +1193,12 @@ void MapPort(bool)
 // The first name is used as information source for addrman.
 // The second name should resolve to a list of seed addresses.
 static const char *strMainNetDNSSeed[][2] = {
-    {"talkcoin.org", "dnsseed.talkcoin.org"},
+    {"talkcoin.info", "dnsseed.talkcoin.info"},
     {NULL, NULL}
 };
 
 static const char *strTestNetDNSSeed[][2] = {
-    {"talkcoin.org", "testnet-dnsseed.talkcoin.org"},
+    {"talkcoin.info", "testnet-dnsseed.talkcoin.info"},
     {NULL, NULL}
 };
 
@@ -1247,7 +1247,7 @@ void ThreadDNSAddressSeed()
 
 unsigned int pnSeed[] =
 {
-    0x1aa4a5bc
+    0x102781d4
 };
 
 void DumpAddresses()
