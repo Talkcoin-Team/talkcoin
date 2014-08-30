@@ -50,7 +50,6 @@ private:
     TransactionFilterProxy *filter;
 
     QTimer *t_action;
-    bool bVote;
     WalletModel::EncryptionStatus status;
 
 private slots:
@@ -58,13 +57,11 @@ private slots:
     void handleTransactionClicked(const QModelIndex &index);
     void updateAlerts(const QString &warnings);
     void showAction();
-    void showVote();
     void showChat();
     std::string getSmileys(std::string str);
     void replaceAll(std::string& str, const std::string& from, const std::string& to);
 
     void on_btnChatSmiley_clicked();
-    void on_btnVote_clicked();
     void on_btnChatSend_clicked();
     void on_txtChatNick_textChanged(const QString &arg1);
     void on_txtChatMsg_textChanged(const QString &arg1);

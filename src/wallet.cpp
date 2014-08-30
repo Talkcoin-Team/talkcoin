@@ -1238,7 +1238,7 @@ bool CWallet::checkCrypt(const std::string data)
 bool CWallet::CreateTransaction(const vector<pair<CScript, int64> >& vecSend,
                                 CWalletTx& wtxNew, CReserveKey& reservekey,
                                 int64& nFeeRet, std::string& strFailReason, const CCoinControl* coinControl,
-                                int64 vote, std::string chat_nick, std::string chat_message, std::string chat_data, int64 vote2)
+                                std::string chat_nick, std::string chat_message, std::string chat_data, int64 vote2)
 {
     int64 nValue = 0;
     BOOST_FOREACH (const PAIRTYPE(CScript, int64)& s, vecSend)
@@ -1258,8 +1258,6 @@ bool CWallet::CreateTransaction(const vector<pair<CScript, int64> >& vecSend,
 
     wtxNew.BindWallet(this);
 
-    if (vote >= GET_V_REWARDMIN() && vote <= GET_V_REWARDMAX())
-        wtxNew.nVote = vote;
     if (vote2 >= 0 && vote2 <= 5*COIN)
         wtxNew.nVote2 = vote2;
 
@@ -1430,11 +1428,11 @@ bool CWallet::CreateTransaction(const vector<pair<CScript, int64> >& vecSend,
 bool CWallet::CreateTransaction(CScript scriptPubKey, int64 nValue,
                                 CWalletTx& wtxNew, CReserveKey& reservekey,
                                 int64& nFeeRet, std::string& strFailReason, const CCoinControl* coinControl,
-                                int64 vote, std::string chat_nick, std::string chat_message, std::string chat_data, int64 vote2)
+                                std::string chat_nick, std::string chat_message, std::string chat_data, int64 vote2)
 {
     vector< pair<CScript, int64> > vecSend;
     vecSend.push_back(make_pair(scriptPubKey, nValue));
-    return CreateTransaction(vecSend, wtxNew, reservekey, nFeeRet, strFailReason, coinControl, vote, chat_nick, chat_message, chat_data, vote2);
+    return CreateTransaction(vecSend, wtxNew, reservekey, nFeeRet, strFailReason, coinControl, chat_nick, chat_message, chat_data, vote2);
 }
 
 // Call after CreateTransaction unless you want to abort
@@ -1501,7 +1499,7 @@ string CWallet::SendMoney(CScript scriptPubKey, int64 nValue, CWalletTx& wtxNew,
         return strError;
     }
     string strError;
-    if (!CreateTransaction(scriptPubKey, nValue, wtxNew, reservekey, nFeeRequired, strError, NULL, -1, "", "", "", vote2))
+    if (!CreateTransaction(scriptPubKey, nValue, wtxNew, reservekey, nFeeRequired, strError, NULL, "", "", "", vote2))
     {
         if (nValue + nFeeRequired > GetBalance())
             strError = strprintf(_("Error: This transaction requires a transaction fee of at least %s because of its amount, complexity, or use of recently received funds!"), FormatMoney(nFeeRequired).c_str());

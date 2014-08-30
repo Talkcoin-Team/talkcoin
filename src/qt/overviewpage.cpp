@@ -134,19 +134,6 @@ OverviewPage::OverviewPage(QWidget *parent) :
     // start with displaying the "out of sync" warnings
     showOutOfSyncWarning(true);
 
-    // ToolTips
-    ui->rbChan1->setToolTip(TLK_CHAN[0][0].c_str());
-    ui->rbChan2->setToolTip(TLK_CHAN[1][0].c_str());
-    ui->btnVote->setToolTip(TalkcoinUnits::formatWithUnit(TalkcoinUnits::TAC, GET_V_VOTE()));
-    ui->chkAutoVote->setToolTip(TalkcoinUnits::formatWithUnit(TalkcoinUnits::TAC, GET_V_VOTE()));
-    ui->btnChatSend->setToolTip(TalkcoinUnits::formatWithUnit(TalkcoinUnits::TAC, GET_V_CHAT()));
-    ui->btnChatBold->setToolTip(TalkcoinUnits::formatWithUnit(TalkcoinUnits::TAC, GET_V_CHATB()));
-
-    // vote
-    ui->spbVote->setMinimum((double)GET_V_REWARDMIN()/COIN);
-    ui->spbVote->setMaximum((double)GET_V_REWARDMAX()/COIN);
-    ui->spbVote->setValue((double)(GET_V_REWARDMAX()/2)/COIN);
-
     // chat
     ui->txtChatNick->installEventFilter(this);
     ui->txtChatMsg->installEventFilter(this);
@@ -211,8 +198,6 @@ void OverviewPage::setClientModel(ClientModel *model)
     ui->txtChatMsg->setPlaceholderText(tr("Type Your Message Here!"));
 #endif
 
-    bVote = false;
-
     t_action = new QTimer(this); t_action->start(5*1000);
     connect(t_action, SIGNAL(timeout()), this, SLOT(showAction()));
     this->showAction();
@@ -224,56 +209,8 @@ void OverviewPage::showAction()
     if(walletModel)
         this->setWalletStatus();
 
-    this->showVote();
-
     if (ui->rbChan1->isChecked()) this->on_rbChan1_clicked();
     else if (ui->rbChan2->isChecked()) this->on_rbChan2_clicked();
-}
-
-void OverviewPage::showVote()
-{
-    int nHeightH = nBestHeight + (V_BlockInterval - (nBestHeight % V_BlockInterval));
-    int start = nHeightH - V_BlockInit - V_Blocks;
-    int end = nHeightH - V_BlockInit;
-
-    ui->lblInfo->setText(TalkcoinUnits::formatWithUnit(TalkcoinUnits::TAC, nSubsidy) + (V_Total? " (" + QString::number(V_Total) + tr(" votes)") : ""));
-
-    if (nBestHeight < start)
-    {
-        int rtime = ((start - nBestHeight) / 180) + 1;
-        ui->lblVoteInfo->setText("~ " + QString::number(rtime) + ((rtime>1)? tr(" hours") : tr(" hour")));
-        ui->lblVoteInfo->setStyleSheet("color: white;");
-        ui->btnVote->setEnabled(false);
-    }
-    else if (nBestHeight >= start && nBestHeight <= end)
-    {
-        ui->lblVoteInfo->setText(tr("Voting is open"));
-        ui->lblVoteInfo->setStyleSheet("color: green;");
-
-        if (!clientModel->inInitialBlockDownload())
-        {
-            if (bVote)
-            {
-                ui->btnVote->setEnabled(false);
-            }
-            else
-            {
-                ui->btnVote->setEnabled(true);
-                if (ui->chkAutoVote->isChecked())
-                {
-                    ui->chkAutoVote->setChecked(Qt::Unchecked);
-                    this->on_btnVote_clicked();
-                }
-            }
-        }
-    }
-    else
-    {
-        ui->lblVoteInfo->setText(tr("Voting is closed"));
-        ui->lblVoteInfo->setStyleSheet("color: red;");
-        ui->btnVote->setEnabled(false);
-        bVote = false;
-    }
 }
 
 void OverviewPage::showChat()
@@ -388,63 +325,6 @@ void OverviewPage::replaceAll(std::string& str, const std::string& from, const s
     while((start_pos = str.find(from, start_pos)) != std::string::npos) {
         str.replace(start_pos, from.length(), to);
         start_pos += to.length(); // In case 'to' contains 'from', like replacing 'x' with 'yx'
-    }
-}
-
-void OverviewPage::on_btnVote_clicked()
-{
-    if (clientModel->inInitialBlockDownload()) return;
-
-    if (ui->spbVote->value() < 1 && nBestHeight < HF1)
-    {
-        ui->spbVote->setStyleSheet("background-color: red;");
-        return;
-    }
-
-    SendCoinsRecipient rv;
-    rv.address = DecodeBase64(GET_A_VOTE1(nBestHeight)).c_str();
-    rv.label = "Talkcoin Vote";
-    rv.amount = GET_V_VOTE(nBestHeight);
-    rv.SetVote();
-    rv.vote = ui->spbVote->value() * COIN;
-    QList<SendCoinsRecipient> recipients;
-    recipients.append(rv);
-
-    WalletModel::SendCoinsReturn sendstatus;
-    if (!walletModel->getOptionsModel() || !walletModel->getOptionsModel()->getCoinControlFeatures())
-        sendstatus = walletModel->sendCoins(recipients);
-    else
-        sendstatus = walletModel->sendCoins(recipients, CoinControlDialog::coinControl);
-
-    switch(sendstatus.status)
-    {
-    case WalletModel::AmountExceedsBalance:
-        QMessageBox::warning(this, tr("Send Coins"),
-            tr("The amount to vote exceeds your balance."),
-            QMessageBox::Ok, QMessageBox::Ok);
-        break;
-    case WalletModel::AmountWithFeeExceedsBalance:
-        QMessageBox::warning(this, tr("Send Coins"),
-            tr("The total to vote exceeds your balance when the %1 transaction fee is included.").
-            arg(TalkcoinUnits::formatWithUnit(TalkcoinUnits::TAC, sendstatus.fee)),
-            QMessageBox::Ok, QMessageBox::Ok);
-        break;
-    case WalletModel::TransactionCreationFailed:
-        QMessageBox::warning(this, tr("Send Coins"),
-            tr("Vote Error: Transaction creation failed!"),
-            QMessageBox::Ok, QMessageBox::Ok);
-        break;
-    case WalletModel::TransactionCommitFailed:
-        QMessageBox::warning(this, tr("Send Coins"),
-            tr("Vote Error: The transaction was rejected. This might happen if some of the coins in your wallet were already spent, such as if you used a copy of wallet.dat and coins were spent in the copy but not marked as spent here."),
-            QMessageBox::Ok, QMessageBox::Ok);
-        break;
-    case WalletModel::Aborted: // User aborted, nothing to do
-        break;
-    case WalletModel::OK:
-        ui->btnVote->setEnabled(false);
-        bVote = true;
-        break;
     }
 }
 
@@ -682,19 +562,13 @@ void OverviewPage::setWalletStatus()
 
 void OverviewPage::on_btnExpand_clicked()
 {
-    if (ui->bottomleftframe->isVisible())
-    {
-        ui->bottomleftframe->setVisible(false);
-        ui->toprightframe->setVisible(false);
-    }
-    else if (ui->topleftframe->isVisible())
+    if (ui->topleftframe->isVisible())
     {
         ui->topleftframe->setVisible(false);
     }
     else
     {
         ui->topleftframe->setVisible(true);
-        ui->bottomleftframe->setVisible(true);
         ui->toprightframe->setVisible(true);
     }
 }

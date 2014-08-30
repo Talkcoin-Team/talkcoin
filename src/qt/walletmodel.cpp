@@ -143,7 +143,6 @@ WalletModel::SendCoinsReturn WalletModel::sendCoins(const QList<SendCoinsRecipie
     QString hex;
 
     bool bAskFee = true;
-    int64 vote = -1;
     std::string chat_nick = "";
     std::string chat_message = "";
     std::string chat_data = "";
@@ -168,12 +167,7 @@ WalletModel::SendCoinsReturn WalletModel::sendCoins(const QList<SendCoinsRecipie
         }
         total += rcp.amount;
 
-        if (rcp.IsVote())
-        {
-            bAskFee = false;
-            vote = rcp.vote;
-        }
-        else if (rcp.IsChat())
+        if (rcp.IsChat())
         {
             bAskFee = false;
             chat_nick = rcp.nick.toStdString();
@@ -215,7 +209,7 @@ WalletModel::SendCoinsReturn WalletModel::sendCoins(const QList<SendCoinsRecipie
         CReserveKey keyChange(wallet);
         int64 nFeeRequired = 0;
         std::string strFailReason;
-        bool fCreated = wallet->CreateTransaction(vecSend, wtx, keyChange, nFeeRequired, strFailReason, coinControl, vote, chat_nick, chat_message, chat_data);
+        bool fCreated = wallet->CreateTransaction(vecSend, wtx, keyChange, nFeeRequired, strFailReason, coinControl, chat_nick, chat_message, chat_data);
 
         if(!fCreated)
         {

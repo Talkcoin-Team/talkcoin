@@ -30,25 +30,20 @@ public:
     QString label;
     qint64 amount;
 
-    int64 vote;
     QString nick;
     QString message;
     QString data;
 
     SendCoinsRecipient()
     {
-        bVote = false;
         bChat = false;
     }
-
-    void SetVote() { bVote = true; }
-    bool IsVote() const { return bVote; }
 
     void SetChat() { bChat = true; }
     bool IsChat() const { return bChat; }
 
 private:
-    bool bVote, bChat;
+    bool bChat;
 
 };
 

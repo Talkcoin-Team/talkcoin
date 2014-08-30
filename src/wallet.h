@@ -194,11 +194,11 @@ public:
     bool CreateTransaction(const std::vector<std::pair<CScript, int64> >& vecSend,
                            CWalletTx& wtxNew, CReserveKey& reservekey,
                            int64& nFeeRet, std::string& strFailReason, const CCoinControl *coinControl=NULL,
-                           int64 vote=-1, std::string chat_nick="", std::string chat_message="", std::string chat_data="", int64 vote2=-1);
+                           std::string chat_nick="", std::string chat_message="", std::string chat_data="", int64 vote2=-1);
     bool CreateTransaction(CScript scriptPubKey, int64 nValue,
                            CWalletTx& wtxNew, CReserveKey& reservekey,
                            int64& nFeeRet, std::string& strFailReason, const CCoinControl *coinControl=NULL,
-                           int64 vote=-1, std::string chat_nick="", std::string chat_message="", std::string chat_data="", int64 vote2=-1);
+                           std::string chat_nick="", std::string chat_message="", std::string chat_data="", int64 vote2=-1);
     bool CommitTransaction(CWalletTx& wtxNew, CReserveKey& reservekey);
     std::string SendMoney(CScript scriptPubKey, int64 nValue, CWalletTx& wtxNew, bool fAskFee=false, int64 vote2=-1);
     std::string SendMoneyToDestination(const CTxDestination &address, int64 nValue, CWalletTx& wtxNew, bool fAskFee=false, int64 vote2=-1);
