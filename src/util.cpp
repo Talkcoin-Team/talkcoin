@@ -90,6 +90,15 @@ CMedianFilter<int64> vTimeOffsets(200,0);
 volatile bool fReopenDebugLog = false;
 bool fCachedPath[2] = {false, false};
 
+// Hard fork 1
+const int HF1 = 241920;
+
+// Temp fork dates to be decided later
+const int nHardFork = 541110;  // Approx: Thu, 25 Sep 2014 17:00:00 GMT
+const int nTestnetFork   =  600;
+const unsigned int nSwitchV2            = 1411948800; // Mon, 29 Sep 2014 00:00:00 GMT
+const unsigned int nTestnetSwitchV2     = 1409270400; // Fri, 29 Aug 2014 00:00:00 GMT
+
 // Init OpenSSL library multithreading support
 static CCriticalSection** ppmutexOpenSSL;
 void locking_callback(int mode, int i, const char* file, int line)

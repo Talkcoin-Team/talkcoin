@@ -150,6 +150,11 @@ extern bool fBloomFilters;
 extern bool fNoListen;
 extern bool fLogTimestamps;
 extern volatile bool fReopenDebugLog;
+extern const int HF1;
+extern const int nHardFork;
+extern const int nTestnetFork;
+extern const unsigned int nSwitchV2;
+extern const unsigned int nTestnetSwitchV2;
 
 void RandAddSeed();
 void RandAddSeedPerfmon();

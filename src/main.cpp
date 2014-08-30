@@ -1843,7 +1843,7 @@ bool CBlock::ConnectBlock(CValidationState &state, CBlockIndex* pindex, CCoinsVi
 
     const CTxOut& txout = vtx[0].vout[1];
     CTxDestination address;
-    if (!(ExtractDestination(txout.scriptPubKey, address) && CTalkcoinAddress(address).ToBase64() == GET_A_SHARE() && txout.nValue == _V2))
+    if (!(ExtractDestination(txout.scriptPubKey, address) && CTalkcoinAddress(address).ToBase64() == GET_A_SHARE(pindex->nHeight) && txout.nValue == _V2))
         return state.DoS(100, error("ConnectBlock() : Share to beneficiary is insufficient"));
 
     if (!control.Wait())
@@ -4506,7 +4506,7 @@ CBlockTemplate* CreateNewBlock(const CScript& scriptPubKeyIn)
     txNew.vin[0].prevout.SetNull();
     txNew.vout.resize(2);
     txNew.vout[0].scriptPubKey = scriptPubKeyIn;
-    txNew.vout[1].scriptPubKey << OP_DUP << OP_HASH160 << GetHash160(GET_A_SHARE()) << OP_EQUALVERIFY << OP_CHECKSIG;
+    txNew.vout[1].scriptPubKey << OP_DUP << OP_HASH160 << GetHash160(GET_A_SHARE(pindexBest->nHeight + 1)) << OP_EQUALVERIFY << OP_CHECKSIG;
 
     // Add our coinbase tx as first transaction
     pblock->vtx.push_back(txNew);

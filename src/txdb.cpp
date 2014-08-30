@@ -163,7 +163,8 @@ bool CCoinsViewDB::GetStats(CCoinsStats &stats, bool fMoney) {
         }
     }
     delete pcursor;
-    stats.nHeight = GetBestBlock()->nHeight;
+    int nHeight = GetBestBlock()->nHeight;
+    stats.nHeight = nHeight;
     stats.hashSerialized = ss.GetHash();
     stats.nTotalAmount = nTotalAmount;
 
@@ -183,7 +184,7 @@ bool CCoinsViewDB::GetStats(CCoinsStats &stats, bool fMoney) {
                     {
                         const CTxOut& txout = tx.vout[i];
                         CTxDestination address;
-                        if (ExtractDestination(txout.scriptPubKey, address) && CTalkcoinAddress(address).ToBase64() == GET_A_GENESIS())
+                        if (ExtractDestination(txout.scriptPubKey, address) && CTalkcoinAddress(address).ToBase64() == GET_A_GENESIS(nHeight))
                             nTotalAmountDestroyed += txout.nValue;
                     }
                 }
