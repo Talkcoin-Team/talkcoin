@@ -29,9 +29,9 @@ static const char* pszBase58 = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnop
 inline std::string GET_A_GENESIS(int nHeight) {
     if (fTestNet) {
         if (nHeight < nTestnetFork) {
-            return "dG9haDhyNHZzWWtKWldiUUVhckx0U3VLNjFlakR0dXZ2bQ==";
+            return "dExkaUVpU2tTMzVmdExCUUxmOGZDenRMN24zYnFzMkNlSw==";
         } else {
-            return "";
+            return "dEZMR29ycGJnWjJpckFCdkp3WW5wUW9MUDUxTjdWR1JEZg==";
         }
     } else {
         if (nHeight < nHardFork) {
@@ -45,7 +45,7 @@ inline std::string GET_A_GENESIS(int nHeight) {
 inline std::string GET_A_VOTE1(int nHeight) {
     if (fTestNet) {
         if (nHeight < nTestnetFork) {
-            return "dG9haDhyNHZzWWtKWldiUUVhckx0U3VLNjFlakR0dXZ2bQ==";
+            return "dExkaUVpU2tTMzVmdExCUUxmOGZDenRMN24zYnFzMkNlSw==";
         } else {
             return "";
         }
@@ -61,7 +61,7 @@ inline std::string GET_A_VOTE1(int nHeight) {
 inline std::string GET_A_VOTE2(int nHeight) {
     if (fTestNet) {
         if (nHeight < nTestnetFork) {
-            return "dG9haDhyNHZzWWtKWldiUUVhckx0U3VLNjFlakR0dXZ2bQ==";
+            return "dExkaUVpU2tTMzVmdExCUUxmOGZDenRMN24zYnFzMkNlSw==";
         } else {
             return "";
         }
@@ -77,9 +77,9 @@ inline std::string GET_A_VOTE2(int nHeight) {
 inline std::string GET_A_CHAT(int nHeight)  {
     if (fTestNet) {
         if (nHeight < nTestnetFork) {
-            return "dG9haDhyNHZzWWtKWldiUUVhckx0U3VLNjFlakR0dXZ2bQ==";
+            return "dExkaUVpU2tTMzVmdExCUUxmOGZDenRMN24zYnFzMkNlSw==";
         } else {
-            return "dGc3WE1FVHlaaUZQYkpRZngxYkdkVlJ6S3JacGtMdlFRdQ==";
+            return "dEZMR29ycGJnWjJpckFCdkp3WW5wUW9MUDUxTjdWR1JEZg==";
         }
     } else {
         if (nHeight < nHardFork) {
@@ -93,9 +93,9 @@ inline std::string GET_A_CHAT(int nHeight)  {
 inline std::string GET_A_SHARE(int nHeight)                {
     if (fTestNet) {
         if (nHeight < nTestnetFork) {
-            return "dG9haDhyNHZzWWtKWldiUUVhckx0U3VLNjFlakR0dXZ2bQ==";
+            return "dExkaUVpU2tTMzVmdExCUUxmOGZDenRMN24zYnFzMkNlSw==";
         } else {
-            return "dGc3WE1FVHlaaUZQYkpRZngxYkdkVlJ6S3JacGtMdlFRdQ==";
+            return "dEZMR29ycGJnWjJpckFCdkp3WW5wUW9MUDUxTjdWR1JEZg==";
         }
     } else {
         if (nHeight < nHardFork) {
@@ -365,7 +365,7 @@ public:
     {
         PUBKEY_ADDRESS = 66, // Talkcoin addresses start with T
         SCRIPT_ADDRESS = 5,
-        PUBKEY_ADDRESS_TEST = 128,
+        PUBKEY_ADDRESS_TEST = 127, // Talkcoin testnet addresses start with t
         SCRIPT_ADDRESS_TEST = 196,
     };
 
