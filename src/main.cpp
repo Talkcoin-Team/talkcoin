@@ -1200,13 +1200,14 @@ int64 static GetBlockValue(int nHeight, int64 nFees)
     if ((!fTestNet && (nHeight < nHardFork)) || (fTestNet && (nHeight < nTestnetFork))) {
         nSubsidy = GetVoteValue(nHeight);
     } else {
-        nSubsidy = 15 * COIN;
+        nSubsidy = 1455 * CENT; // Block reward
+        _V2 = 45 * CENT; // Dev fund
         if (nHeight >= 1500000) {
-            nSubsidy = 8 * COIN;
-            nSubsidy >>= (nHeight - 1500000) / 1500000;
+            nSubsidy = 1552 * CENT;
+            nSubsidy >>= nHeight / 1500000;
+            _V2 = 48 * CENT;
+            _V2 >>= nHeight / 1500000;
         }
-        _V2 = nSubsidy * (3 / 100);
-        nSubsidy -= _V2;
     }
 
     return nSubsidy + nFees;
@@ -2463,7 +2464,7 @@ bool CBlock::AcceptBlock(CValidationState &state, CDiskBlockPos *dbp)
         if (pcheckpoint && nHeight < pcheckpoint->nHeight)
             return state.DoS(100, error("AcceptBlock() : forked chain older than last checkpoint (height %d)", nHeight));
 
-        
+
         /* Don't accept v1 blocks after this point */
         if((!fTestNet && (nTime > nSwitchV2)) || (fTestNet && (nTime > nTestnetSwitchV2))) {
             CScript expect = CScript() << nHeight;
@@ -2476,7 +2477,7 @@ bool CBlock::AcceptBlock(CValidationState &state, CDiskBlockPos *dbp)
             if(nVersion != 2)
                 return(state.DoS(100, error("AcceptBlock() : incorrect block version")));
         }
-        
+
         // Reject block.nVersion=1 blocks when 95% (75% on testnet) of the network has upgraded:
         if (nVersion < 2)
         {

@@ -45,15 +45,15 @@ inline std::string GET_A_GENESIS(int nHeight) {
 inline std::string GET_A_VOTE1(int nHeight) {
     if (fTestNet) {
         if (nHeight < nTestnetFork) {
-            return "dExkaUVpU2tTMzVmdExCUUxmOGZDenRMN24zYnFzMkNlSw==";
+            return "dEx0QWdvcUZtZVo3c2FnczlHWW83cmJaZ2Z1aE5pZ1pMRQ==";
         } else {
-            return "";
+            return "dE1xazZ2ZVhOTnhBZXZVOG5uWk04RDFaY0ZIaUdqakpjUA==";
         }
     } else {
         if (nHeight < nHardFork) {
             return (nHeight<HF1)? "VHRENDZ6WmgxVEtqM0JaZHhLa0tzcmMyUHE3TDlqTUFxdw==" : GET_A_GENESIS(nHeight);
         } else {
-            return "";
+            return "VG9aTHc5REdHdzJlNlVTYXpYUU5ZMjVZcGRpVUR3TU5wTQ==";
         }
     }
 }
@@ -61,15 +61,15 @@ inline std::string GET_A_VOTE1(int nHeight) {
 inline std::string GET_A_VOTE2(int nHeight) {
     if (fTestNet) {
         if (nHeight < nTestnetFork) {
-            return "dExkaUVpU2tTMzVmdExCUUxmOGZDenRMN24zYnFzMkNlSw==";
+            return "dFJhYXlRaGduRHNXOVRKWDZvc05pVnZGSnhKSHJnWlRZVw==";
         } else {
-            return "";
+            return "dDhpcVdWUlVxaWlIQWFaWUNpclV2aVUzbUVDQWlTY3FqQg==";
         }
     } else {
         if (nHeight < nHardFork) {
             return (nHeight<HF1)? "VFpaR1I4NTk3QWV6VG1hVXNLMW1QS0dqYzRWbkZIaUJDcg==" : GET_A_GENESIS(nHeight);
         } else {
-            return "";
+            return "VG9aTHc5REdHdzJlNlVTYXpYUU5ZMjVZcGRpVUR3TU5wTQ==";
         }
     }
 }
@@ -77,9 +77,9 @@ inline std::string GET_A_VOTE2(int nHeight) {
 inline std::string GET_A_CHAT(int nHeight)  {
     if (fTestNet) {
         if (nHeight < nTestnetFork) {
-            return "dExkaUVpU2tTMzVmdExCUUxmOGZDenRMN24zYnFzMkNlSw==";
+            return "dENZUWhDWndnY3JBdjdpTnZySHVrdjFpdDNkQUI5cVFuWA==";
         } else {
-            return "dEZMR29ycGJnWjJpckFCdkp3WW5wUW9MUDUxTjdWR1JEZg==";
+            return "dEFiaXd3ZG1NWThxY0RVWjJtTWNyUmNHRzNtall4VjlHOQ==";
         }
     } else {
         if (nHeight < nHardFork) {
@@ -93,9 +93,9 @@ inline std::string GET_A_CHAT(int nHeight)  {
 inline std::string GET_A_SHARE(int nHeight)                {
     if (fTestNet) {
         if (nHeight < nTestnetFork) {
-            return "dExkaUVpU2tTMzVmdExCUUxmOGZDenRMN24zYnFzMkNlSw==";
+            return "dDgydXFUY2pLdVFuYWo4ZmhFQmhXcjRHaHp0ZG90OTRweg==";
         } else {
-            return "dEZMR29ycGJnWjJpckFCdkp3WW5wUW9MUDUxTjdWR1JEZg==";
+            return "dFZLTHl6VEI5MWZydDVVYzZGenFkRmJRUWMxY2ZvVGhhMg==";
         }
     } else {
         if (nHeight < nHardFork) {
