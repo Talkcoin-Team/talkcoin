@@ -565,6 +565,7 @@ void OverviewPage::on_btnExpand_clicked()
     if (ui->topleftframe->isVisible())
     {
         ui->topleftframe->setVisible(false);
+        ui->toprightframe->setVisible(false);
     }
     else
     {
