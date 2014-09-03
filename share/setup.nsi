@@ -5,7 +5,7 @@ SetCompressor /SOLID lzma
 
 # General Symbol Definitions
 !define REGKEY "SOFTWARE\$(^Name)"
-!define VERSION 0.1.4.1
+!define VERSION 0.2.0.0
 !define COMPANY "Talkcoin project"
 !define URL http://www.talkcoin.org/
 
